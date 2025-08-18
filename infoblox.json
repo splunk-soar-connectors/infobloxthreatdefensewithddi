@@ -1506,6 +1506,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -1756,6 +1768,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -1976,6 +2000,18 @@
                 },
                 {
                     "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
                     "data_type": "string"
                 }
             ],
@@ -2363,6 +2399,18 @@
                     "example_values": [
                         204970
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2481,6 +2529,18 @@
                     "example_values": [
                         204970
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2583,6 +2643,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2671,7 +2743,11 @@
                 {
                     "data_path": "action_result.parameter.asset_ip",
                     "data_type": "string",
-                    "example_value": "192.168.5.10"
+                    "example_value": "192.168.5.10",
+                    "contains": [
+                        "ip",
+                        "ipv6"
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.from",
@@ -2680,7 +2756,10 @@
                 },
                 {
                     "data_path": "action_result.parameter.insight_id",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.limit",
@@ -2691,7 +2770,10 @@
                 },
                 {
                     "data_path": "action_result.parameter.mac_address",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "mac address"
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.os_version",
@@ -2704,7 +2786,10 @@
                 },
                 {
                     "data_path": "action_result.parameter.user",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "user name"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.cmac",
@@ -2826,6 +2911,14 @@
                     "data_type": "string",
                     "column_name": "Status Message",
                     "column_order": 1
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
                 }
             ],
             "render": {
@@ -3009,6 +3102,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3165,6 +3270,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3291,6 +3408,18 @@
                 },
                 {
                     "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
                     "data_type": "string"
                 }
             ],
@@ -3484,6 +3613,18 @@
                     "example_values": [
                         "All"
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3717,6 +3858,18 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3927,6 +4080,18 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3990,6 +4155,14 @@
                     ],
                     "column_name": "Status Message",
                     "column_order": 1
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
                 }
             ],
             "render": {
@@ -4136,6 +4309,18 @@
                 },
                 {
                     "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
                     "data_type": "string"
                 }
             ],
@@ -4343,6 +4528,18 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4448,6 +4645,18 @@
                 },
                 {
                     "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
                     "data_type": "string"
                 }
             ],
@@ -4675,6 +4884,18 @@
                     "example_values": [
                         "2025-07-31T05:16:37Z"
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4734,6 +4955,9 @@
                     "data_type": "string",
                     "example_values": [
                         "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ],
+                    "contains": [
+                        "infoblox insight id"
                     ]
                 },
                 {
@@ -4813,6 +5037,10 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4926,6 +5154,9 @@
                     "data_type": "string",
                     "example_values": [
                         "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ],
+                    "contains": [
+                        "infoblox insight id"
                     ]
                 },
                 {
@@ -5032,6 +5263,18 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
                 }
             ],
             "render": {
@@ -5309,6 +5552,18 @@
                 },
                 {
                     "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
                     "data_type": "string"
                 }
             ],

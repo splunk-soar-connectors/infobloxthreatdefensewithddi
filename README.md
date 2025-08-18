@@ -416,6 +416,9 @@ action_result.data.\*.tasks.\*.start_ts | numeric | | 1753880236526 |
 action_result.data.\*.tasks.\*.state | string | | completed |
 action_result.data.\*.tasks.\*.status | string | | success |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get indicator intel lookup result'
 
@@ -467,6 +470,9 @@ action_result.data.\*.results.\*.status | string | | |
 action_result.data.\*.results.\*.time | numeric | | |
 action_result.data.\*.results.\*.v | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'ip asset data lookup'
 
@@ -516,6 +522,9 @@ action_result.data.\*.results.\*.tags.Snow_sys_id | string | | 759b5756479212106
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.data.\*.results.\*.usage | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get custom list'
 
@@ -622,6 +631,9 @@ action_result.summary.description | string | | temporary desc |
 action_result.summary.name | string | | test-network |
 action_result.summary.network_list_id | numeric | | 1859146 |
 action_result.summary.security_policy_id | numeric | | 204970 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'update network list'
 
@@ -656,6 +668,9 @@ action_result.summary.description | string | | update desc |
 action_result.summary.name | string | | test update |
 action_result.summary.network_list_id | numeric | | 1859146 |
 action_result.summary.security_policy_id | numeric | | 204970 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get network list'
 
@@ -688,6 +703,9 @@ action_result.data.\*.results.\*.id | numeric | | |
 action_result.data.\*.results.\*.name | string | | |
 action_result.data.\*.results.\*.policy_id | numeric | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get soc insights assets'
 
@@ -714,14 +732,14 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
-action_result.parameter.asset_ip | string | | |
+action_result.parameter.asset_ip | string | `ip` `ipv6` | |
 action_result.parameter.from | string | | |
-action_result.parameter.insight_id | string | | |
+action_result.parameter.insight_id | string | `infoblox insight id` | |
 action_result.parameter.limit | numeric | | 1 |
-action_result.parameter.mac_address | string | | |
+action_result.parameter.mac_address | string | `mac address` | |
 action_result.parameter.os_version | string | | |
 action_result.parameter.to | string | | |
-action_result.parameter.user | string | | |
+action_result.parameter.user | string | `user name` | |
 action_result.data.\*.cmac | string | `mac address` | |
 action_result.data.\*.mostRecentAction | string | | Not Blocked |
 action_result.data.\*.osVersion | string | | |
@@ -755,6 +773,8 @@ action_result.parameter.network_list_id | numeric | | |
 action_result.data | string | | |
 action_result.summary.network_list_id | numeric | | |
 action_result.message | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
 
 ## action: 'host asset data lookup'
 
@@ -799,6 +819,9 @@ action_result.data.\*.results.\*.tags.Rapid7_scan_time | string | | 2025-07-21 0
 action_result.data.\*.results.\*.tags.Rapid7_sync | string | | true |
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'dns record lookup'
 
@@ -841,6 +864,9 @@ action_result.data.\*.results.\*.type | string | | |
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.data.\*.results.\*.view_name | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'dhcp lease lookup'
 
@@ -876,6 +902,9 @@ action_result.data.\*.results.\*.space | string | | |
 action_result.data.\*.results.\*.starts | string | | |
 action_result.data.\*.results.\*.state | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'indicator threat lookup'
 
@@ -918,6 +947,9 @@ action_result.data.\*.threat.\*.hash_type | string | | SHA256 |
 action_result.data.\*.threat.\*.threat_label | string | | IP IoC |
 action_result.data.\*.threat.\*.up | string | | true |
 action_result.summary.indicator_type | string | | All |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'create custom list'
 
@@ -963,6 +995,9 @@ action_result.summary.custom_list_name | string | | temp-custom |
 action_result.summary.item_count | numeric | | 2 |
 action_result.summary.total_objects | numeric | | 1 |
 action_result.summary.total_objects_successful | numeric | | 1 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'update custom list'
 
@@ -1006,6 +1041,9 @@ action_result.summary.custom_list_name | string | | temp-custom |
 action_result.summary.item_count | numeric | | 2 |
 action_result.summary.total_objects | numeric | | 1 |
 action_result.summary.total_objects_successful | numeric | | 1 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'remove security policy'
 
@@ -1031,6 +1069,8 @@ action_result.parameter.security_policy_id | numeric | | 12345 67890 |
 action_result.data | string | | |
 action_result.summary.security_policy_id | numeric | | 12345 |
 action_result.message | string | | Successfully removed security policy with ID: 12345 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
 
 ## action: 'get security policy'
 
@@ -1070,6 +1110,9 @@ action_result.data.\*.results.\*.rules.\*.description | string | | Suspicious de
 action_result.data.\*.results.\*.scope_expr | string | | |
 action_result.data.\*.results.\*.tags | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'create security policy'
 
@@ -1119,6 +1162,9 @@ action_result.data.\*.results.rules.\*.description | string | | Suspicious desti
 action_result.data.\*.results.scope_expr | string | | |
 action_result.data.\*.results.tags | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'update custom list items'
 
@@ -1150,6 +1196,9 @@ action_result.data.\*.deleted_items.\*.item | string | | 193.56.2.11/32 |
 action_result.data.\*.deleted_items.\*.status | numeric | | -1 |
 action_result.data.\*.deleted_items.\*.status_details | string | | |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'update security policy'
 
@@ -1204,6 +1253,9 @@ action_result.summary.name | string | | temp-policy |
 action_result.summary.policy_id | numeric | | 227005 |
 action_result.summary.update_status | string | | Success |
 action_result.summary.updated_time | string | | 2025-07-31T05:16:37Z |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get soc insights comments'
 
@@ -1226,7 +1278,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
 action_result.parameter.from | string | | 2025-06-11T04:10:00.000 |
-action_result.parameter.insight_id | string | | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
 action_result.parameter.to | string | | 2025-06-11T04:10:00.000 |
 action_result.data.\*.comments.\*.commentsChanger | string | | dhruvil.bhatt@crestdatasys.com |
 action_result.data.\*.comments.\*.dateChanged | string | | 2025-07-08T11:55:49.551 |
@@ -1237,6 +1289,7 @@ action_result.summary.insight_id | string | | d00070a8-6ce9-40dd-8e2e-b8b7c05b30
 action_result.summary.to_filter | string | | Not specified |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
+action_result.message | string | | |
 
 ## action: 'get soc insights indicators'
 
@@ -1268,7 +1321,7 @@ action_result.parameter.actor | string | | spam_azure_aws |
 action_result.parameter.confidence | string | | 3 |
 action_result.parameter.from | string | | 2025-06-11T04:10:00.000 |
 action_result.parameter.indicator | string | | ikhwanschoolday.us |
-action_result.parameter.insight_id | string | | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
 action_result.parameter.limit | numeric | | 100 |
 action_result.parameter.to | string | | 2025-06-11T04:10:00.000 |
 action_result.data.\*.indicators.\*.action | string | | Not Blocked |
@@ -1282,6 +1335,9 @@ action_result.data.\*.indicators.\*.threatLevelMax | string | | 3 |
 action_result.summary.insight_id | string | | d00070a8-6ce9-40dd-8e2e-b8b7c05b303f |
 action_result.summary.limit_applied | numeric | | 1 |
 action_result.summary.total_indicators | numeric | | 1 |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ## action: 'get soc insights events'
 
@@ -1333,6 +1389,9 @@ action_result.data.\*.events.\*.policy | string | | Default Global Policy |
 action_result.data.\*.events.\*.threatFamily | string | | EmergentDomain |
 action_result.data.\*.events.\*.threatLevel | string | | High |
 action_result.summary | string | | |
+summary.total_objects | numeric | | |
+summary.total_objects_successful | numeric | | |
+action_result.message | string | | |
 
 ______________________________________________________________________
 
