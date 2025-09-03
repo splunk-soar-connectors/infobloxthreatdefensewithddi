@@ -1,7 +1,7 @@
 {
     "appid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "name": "Infoblox Threat Defense with DDI",
-    "description": "This app integrates with Infoblox Threat Defense with DDI to provide DNS security, threat intelligence, and centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.",
+    "description": "This app integrates with Infoblox Threat Defense with DDI to provide DNS Security, Threat Intelligence, and Centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.",
     "type": "network security",
     "product_vendor": "Infoblox",
     "logo": "logo_infoblox.svg",

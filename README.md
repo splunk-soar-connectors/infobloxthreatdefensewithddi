@@ -6,7 +6,7 @@ Product Vendor: Infoblox <br>
 Product Name: Infoblox Threat Defense with DDI <br>
 Minimum Product Version: 6.4.1
 
-This app integrates with Infoblox Threat Defense with DDI to provide DNS security, threat intelligence, and centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.
+This app integrates with Infoblox Threat Defense with DDI to provide DNS Security, Threat Intelligence, and Centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.
 
 # Explanation of Data Ingestion
 
