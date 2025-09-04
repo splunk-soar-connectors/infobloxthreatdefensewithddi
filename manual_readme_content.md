@@ -105,8 +105,8 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## Best Practices
+## Playbooks
 
-- For detailed information on the playbooks for Infoblox Threat Defense with DDI, please refer https://github.com/infobloxopen/infoblox_splunk_soar and follow the steps in the README to set up the playbooks.
+- Playbooks for **Infoblox Threat Defense with DDI** are available in the [repository](https://github.com/infobloxopen/infoblox_splunk_soar/tree/main/Infoblox%20Threat%20Defense%20with%20DDI). Refer to the README for detailed instructions on setup and configuration.
 
 ______________________________________________________________________
