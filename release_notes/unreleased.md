@@ -1,4 +1,1 @@
 **Unreleased**
-
-* Initial release
-

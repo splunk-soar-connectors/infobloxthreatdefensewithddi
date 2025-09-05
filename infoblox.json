@@ -12,7 +12,7 @@
     "publisher": "Infoblox",
     "license": "Copyright 2025 Infoblox Inc.",
     "app_version": "1.0.0",
-    "utctime_updated": "2025-07-02T09:45:00.000000Z",
+    "utctime_updated": "2025-09-05T19:02:27.446150Z",
     "package_name": "phantom_infoblox",
     "main_module": "infoblox_connector.py",
     "min_phantom_version": "6.4.1",
