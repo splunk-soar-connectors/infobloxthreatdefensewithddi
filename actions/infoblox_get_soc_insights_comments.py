@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from urllib.parse import quote
+
 import phantom.app as phantom
 
 import infoblox_consts as consts
@@ -67,7 +69,7 @@ class GetSocInsightsComments(BaseAction):
         Returns:
             tuple: (status, response) - Status code and API response
         """
-        insight_id = self._param.get("insight_id")
+        insight_id = quote(str(self._param.get("insight_id")), safe="")
         endpoint = consts.SOC_INSIGHTS_COMMENTS_ENDPOINT.format(insight_id)
 
         # Build query parameters

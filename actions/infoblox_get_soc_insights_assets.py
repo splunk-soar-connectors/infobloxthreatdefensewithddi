@@ -13,6 +13,8 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
+from urllib.parse import quote
+
 import phantom.app as phantom
 
 import infoblox_consts as consts
@@ -95,7 +97,7 @@ class GetSOCInsightsAssets(BaseAction):
         Returns:
             tuple: (endpoint, params)
         """
-        insight_id = self._param["insight_id"]
+        insight_id = quote(str(self._param["insight_id"]), safe="")
         asset_ip = self._param.get("asset_ip")
         mac_address = self._param.get("mac_address")
         os_version = self._param.get("os_version")

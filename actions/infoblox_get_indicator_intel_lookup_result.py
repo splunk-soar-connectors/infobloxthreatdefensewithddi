@@ -13,6 +13,8 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
+from urllib.parse import quote
+
 import phantom.app as phantom
 
 import infoblox_consts as consts
@@ -36,7 +38,7 @@ class GetIndicatorIntelLookupResult(BaseAction):
             tuple: (status, response) - Status code and API response
         """
         # Get the job_id parameter
-        job_id = self._param["job_id"]
+        job_id = quote(str(self._param["job_id"]), safe="")
 
         # Prepare the endpoint with the job_id
         endpoint = f"{consts.INDICATOR_INTEL_LOOKUP_JOBS_ENDPOINT}/{job_id}/results"
