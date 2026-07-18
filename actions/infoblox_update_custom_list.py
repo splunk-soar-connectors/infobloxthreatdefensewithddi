@@ -30,6 +30,17 @@ class UpdateCustomList(BaseAction):
         Returns:
             int: phantom.APP_SUCCESS on successful validation, phantom.APP_ERROR otherwise
         """
+        ret_val, custom_list_id = self._connector.validator.validate_integer(
+            self._action_result,
+            self._param.get("custom_list_id"),
+            "custom_list_id",
+            allow_zero=False,
+            allow_negative=False,
+        )
+        if phantom.is_fail(ret_val):
+            return ret_val
+        self._param["custom_list_id"] = custom_list_id
+
         # Validate tags parameter (if provided)
         tags = self._param.get("tags", "").strip()
         if tags:

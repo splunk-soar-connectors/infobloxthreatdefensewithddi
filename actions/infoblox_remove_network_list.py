@@ -26,6 +26,19 @@ class RemoveNetworkList(BaseAction):
         """Log the start of the action execution."""
         self._connector.save_progress(consts.EXECUTION_START_MSG.format("Remove Network List"))
 
+    def __validate_params(self):
+        ret_val, network_list_id = self._connector.validator.validate_integer(
+            self._action_result,
+            self._param.get("network_list_id"),
+            "network_list_id",
+            allow_zero=False,
+            allow_negative=False,
+        )
+        if phantom.is_fail(ret_val):
+            return ret_val
+        self._param["network_list_id"] = network_list_id
+        return phantom.APP_SUCCESS
+
     def __make_api_call(self):
         """
         Make the REST API call to remove the network list.
@@ -72,6 +85,10 @@ class RemoveNetworkList(BaseAction):
         """
         # Log action start
         self.__log_action_start()
+
+        ret_val = self.__validate_params()
+        if phantom.is_fail(ret_val):
+            return ret_val
 
         # Make API call
         ret_val, response = self.__make_api_call()

@@ -35,11 +35,12 @@ class UpdateCustomListItems(BaseAction):
         """
         # Validate custom_list_id parameter
         custom_list_id = self._param.get("custom_list_id")
-        ret_val = self._connector.validator.validate_integer(
+        ret_val, custom_list_id = self._connector.validator.validate_integer(
             self._action_result, custom_list_id, "custom_list_id", allow_zero=False, allow_negative=False
         )
         if phantom.is_fail(ret_val):
             return ret_val
+        self._param["custom_list_id"] = custom_list_id
 
         # Validate items parameter format
         items_param = self._param.get("items")
