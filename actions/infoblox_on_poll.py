@@ -348,7 +348,7 @@ class OnPoll(BaseAction):
         container_name = f"{tclass} - {qname}" if tclass and qname else "Infoblox DNS Security Event"
 
         # Map severity to container severity using the constant from infoblox_consts
-        container_severity = consts.SEVERITY_MAPPING.get(severity, "medium")
+        container_severity = consts.SEVERITY_MAPPING.get(severity, "high")
 
         event_time = event.get("event_time", "Unknown Time")
         qname = event.get("qname", "Unknown Domain")
@@ -357,8 +357,7 @@ class OnPoll(BaseAction):
         container_name = f"Infoblox DNS Security Event - {qname} - {event_time}"
 
         # Map severity to container severity
-        severity_mapping = {"LOW": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "high"}
-        container_severity = severity_mapping.get(threat_level, "medium")
+        container_severity = consts.SEVERITY_MAPPING.get(threat_level, "high")
 
         # Generate a unique source data identifier
         source_data_id = f"{qname}_{event.get('device', '')}_{event.get('event_time', '')}"
@@ -473,7 +472,7 @@ class OnPoll(BaseAction):
             "source_data_identifier": source_data_id,
             "cef": cef_data,
             "cef_types": artifact_cef_types,
-            "severity": consts.SEVERITY_MAPPING.get(event.get("severity", ""), "medium"),
+            "severity": consts.SEVERITY_MAPPING.get(event.get("severity", ""), "high"),
             "data": event,
             "run_automation": True,
             "type": artifact_type,
@@ -679,7 +678,7 @@ class OnPoll(BaseAction):
         Returns:
             str: Phantom severity level
         """
-        return consts.PHANTOM_SEVERITY_MAP.get(priority_text.upper())
+        return consts.PHANTOM_SEVERITY_MAP.get(priority_text.upper(), "high")
 
     def _create_artifact_for_insight(self, insight, container_id):
         """Create an artifact for a SOC Insight.
