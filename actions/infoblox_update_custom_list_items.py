@@ -42,6 +42,15 @@ class UpdateCustomListItems(BaseAction):
             return ret_val
         self._param["custom_list_id"] = custom_list_id
 
+        action = str(self._param.get("action", "Add")).strip().casefold()
+        normalized_actions = {"add": "Add", "remove": "Remove"}
+        if action not in normalized_actions:
+            return self._action_result.set_status(
+                phantom.APP_ERROR,
+                "'action' must be Add or Remove",
+            )
+        self._param["action"] = normalized_actions[action]
+
         # Validate items parameter format
         items_param = self._param.get("items")
 
