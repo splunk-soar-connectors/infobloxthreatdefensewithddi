@@ -457,8 +457,7 @@ class Validator:
         elif indicator_type == "hash":
             is_valid = self.validate_hash(indicator_value)
         else:
-            # No validation for unknown types
-            return (phantom.APP_SUCCESS, None)
+            return (phantom.APP_ERROR, f"Unsupported indicator type: {indicator_type}")
 
         # Return success if valid, error with message if invalid
         if is_valid:
