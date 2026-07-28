@@ -1,4 +1,4 @@
-# File: infoblox_get_soc_insights_assets.py
+# File: infoblox_get_iq_for_td_insights_assets.py
 #
 # Copyright 2025-2026 Infoblox Inc.
 #
@@ -21,45 +21,39 @@ import infoblox_consts as consts
 from actions import BaseAction
 
 
-class GetSOCInsightsAssets(BaseAction):
-    """Class to handle get SOC insights assets action.
+class GetIqForTdInsightsAssets(BaseAction):
+    """Class to handle get IQ for TD insights assets action.
 
     This action retrieves assets associated with a specific Insight ID from Infoblox BloxOne.
     """
 
     def _validate_params(self):
-        """Validate the parameters for the get SOC insights assets action.
+        """Validate the parameters for the get IQ for TD insights assets action.
 
         Checks that parameters are of the correct type and format.
 
         Returns:
             int: phantom.APP_SUCCESS if validation passes, phantom.APP_ERROR otherwise
         """
-        self._connector.debug_print("Validating parameters for get SOC insights assets action")
+        self._connector.debug_print("Validating parameters for get IQ for TD insights assets action")
 
         ret_val = self._connector.validator.validate_path_identifier(self._action_result, self._param.get("insight_id"), "insight_id")
         if phantom.is_fail(ret_val):
             return ret_val
 
-        # Validate asset_ip if provided - use the utility method from InfobloxUtils
-        asset_ip = self._param.get("asset_ip")
-        if asset_ip:
-            self._connector.debug_print(f"Validating asset_ip parameter: {asset_ip}")
-            if not self._connector.validator.validate_ip_address(asset_ip):
-                self._connector.debug_print(f"IP validation failed for: {asset_ip}")
-                return self._action_result.set_status(phantom.APP_ERROR, f"Invalid IP address format: {asset_ip}")
-            self._connector.debug_print(f"IP validation successful for: {asset_ip}")
+        # Validate ip_address if provided - comma-separated list of IP addresses
+        ip_address = self._param.get("ip_address")
+        if ip_address:
+            for ip in [ip.strip() for ip in ip_address.split(",") if ip.strip()]:
+                if not self._connector.validator.validate_ip_address(ip):
+                    return self._action_result.set_status(phantom.APP_ERROR, f"Invalid IP address format: {ip}")
 
-        # Validate mac_address if provided - use the utility method from InfobloxUtils
-        mac_address = self._param.get("mac_address")
-        if mac_address:
-            self._connector.debug_print(f"Validating mac_address parameter: {mac_address}")
-            if not self._connector.validator.validate_mac_address(mac_address):
-                self._connector.debug_print(f"MAC address validation failed for: {mac_address}")
-                return self._action_result.set_status(
-                    phantom.APP_ERROR, f"Invalid MAC address format: {mac_address}. Expected format: AA:BB:CC:DD:EE:FF"
-                )
-            self._connector.debug_print(f"MAC address validation successful for: {mac_address}")
+        # Validate is_verified if provided
+        is_verified = self._param.get("is_verified")
+        if is_verified:
+            ret_val, is_verified = self._connector.validator.validate_boolean(self._action_result, is_verified, "is_verified")
+            if phantom.is_fail(ret_val):
+                return ret_val
 
         # Validate limit if provided (must be a positive integer)
         limit = self._param.get("limit")
@@ -71,29 +65,11 @@ class GetSOCInsightsAssets(BaseAction):
             if phantom.is_fail(ret_val):
                 self._connector.debug_print(f"Limit validation failed: {self._action_result.get_message()}")
                 return ret_val
-            self._connector.debug_print(f"Limit validation successful: {limit}")
-
-        # Validate 'from' and 'to' date format if provided
-        from_date = self._param.get("from")
-        if from_date:
-            if not self._connector.validator.validate_datetime_format(from_date):
-                self._connector.debug_print("From date format validation failed")
-                return self._action_result.set_status(phantom.APP_ERROR, consts.ERROR_INVALID_DATETIME_FORMAT.format(key="from"))
-            self._connector.debug_print(f"From date validation successful: {from_date}")
-
-        to_date = self._param.get("to")
-        if to_date:
-            if not self._connector.validator.validate_datetime_format(to_date):
-                self._connector.debug_print("To date format validation failed")
-                return self._action_result.set_status(phantom.APP_ERROR, consts.ERROR_INVALID_DATETIME_FORMAT.format(key="to"))
-            self._connector.debug_print(f"To date validation successful: {to_date}")
-
-        self._connector.debug_print("Parameter validation completed successfully")
         return phantom.APP_SUCCESS
 
     def __log_action_start(self):
         """Log the start of the action execution."""
-        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get SOC insights assets"))
+        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get IQ for TD insights assets"))
 
     def __build_endpoint_and_params(self):
         """Build the endpoint and query parameters for the API call.
@@ -102,40 +78,31 @@ class GetSOCInsightsAssets(BaseAction):
             tuple: (endpoint, params)
         """
         insight_id = quote(str(self._param["insight_id"]), safe="")
-        asset_ip = self._param.get("asset_ip")
-        mac_address = self._param.get("mac_address")
-        os_version = self._param.get("os_version")
-        user = self._param.get("user")
-        limit = self._param.get("limit", 100)
-        from_date = self._param.get("from")
-        to_date = self._param.get("to")
-
-        # Build the endpoint with the insight ID
-        endpoint = f"{consts.SOC_INSIGHTS_ENDPOINT}/{insight_id}/assets"
-
+        endpoint = consts.IQ_FOR_TD_INSIGHTS_ASSETS_ENDPOINT.format(insight_id)
         # Build the query parameters
         params = {}
-        if asset_ip:
-            params["qip"] = asset_ip
-        if mac_address:
-            params["cmac"] = mac_address
-        if os_version:
-            params["os_version"] = os_version
-        if user:
-            params["user"] = user
-        if limit:
-            params["limit"] = limit
-        if from_date:
-            params["from"] = from_date
-        if to_date:
-            params["to"] = to_date
+        if self._param.get("device_name"):
+            params["device_name"] = self._param.get("device_name")
+        if self._param.get("indicators"):
+            params["indicators"] = self._param.get("indicators")
+        if self._param.get("users"):
+            params["users"] = self._param.get("users")
+        if self._param.get("ip_address"):
+            params["ip_address"] = self._param.get("ip_address")
+
+        is_verified = self._param.get("is_verified")
+        if is_verified:
+            params["is_verified"] = str(is_verified).strip().lower() in ("true", "1")
+
+        if self._param.get("limit"):
+            params["limit"] = self._param.get("limit")
 
         self._connector.debug_print(f"Using endpoint: {endpoint} with params: {params}")
 
         return endpoint, params
 
     def __make_api_call(self, endpoint, params):
-        """Make the API call to retrieve SOC insights assets.
+        """Make the API call to retrieve IQ for TD insights assets.
 
         Args:
             endpoint (str): The API endpoint to call
@@ -177,7 +144,12 @@ class GetSOCInsightsAssets(BaseAction):
 
         # Create summary
         total_assets = len(assets)
-        summary = {"total_assets": total_assets}
+        summary = {
+            "total_assets": total_assets,
+            "insight_id": self._param.get("insight_id"),
+            "limit_applied": self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_DEFAULT_LIMIT),
+        }
+
         self._connector.debug_print(f"Total assets found: {total_assets}")
 
         # Set appropriate message based on asset count
@@ -211,7 +183,7 @@ class GetSOCInsightsAssets(BaseAction):
         return self._action_result.get_status()
 
     def execute(self):
-        """Execute get SOC insights assets action.
+        """Execute get IQ for TD insights assets action.
 
         Step 1: Log action start
         Step 2: Validate parameters

@@ -1,18 +1,18 @@
 # Infoblox Threat Defense with DDI
 
 Publisher: Infoblox <br>
-Connector Version: 1.0.2 <br>
+Connector Version: 2.0.0 <br>
 Product Vendor: Infoblox <br>
 Product Name: Infoblox Threat Defense with DDI <br>
 Minimum Product Version: 6.4.1
 
-This app integrates with Infoblox Threat Defense with DDI to provide DNS Security, Threat Intelligence, and Centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.
+This app integrates with Infoblox Threat Defense with DDI to provide DNS security, threat intelligence, and centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.
 
 # Explanation of Data Ingestion
 
-This integration supports two types of data ingestion: **DNS Security Events** and **SOC Insights**. If an ingestion type is not selected while configuring asset, data ingestion will not occur. Only one data ingestion type can be configured per asset. To configure multiple data ingestions, set up multiple assets.
+This integration supports two types of data ingestion: **DNS Security Events** and **IQ for TD Insights**. If an ingestion type is not selected while configuring asset, the integration defaults to ingesting **DNS Security Events**. Only one data ingestion type can be configured per asset. To configure multiple data ingestions, set up multiple assets.
 
-The below details describe the configuration and usage of the Infoblox integration for Splunk SOAR, focusing on the two on-poll ingestion types: **DNS Security Events** and **SOC Insights**.
+The below details describe the configuration and usage of the Infoblox integration for Splunk SOAR, focusing on the two on-poll ingestion types: **DNS Security Events** and **IQ for TD Insights**.
 
 ______________________________________________________________________
 
@@ -44,7 +44,7 @@ ______________________________________________________________________
 
 - **Parameters:**
 
-  - **Max Hours Backwards:** Number of hours before the first connector iteration to retrieve alerts from (integer, default: 0).
+  - **Max Hours Backwards:** Number of hours before the first connector iteration to retrieve alerts from (integer, default: 24).
   - **Queried name:** Filter by comma-separated queried domain names (string list).
   - **Policy Name:** Filter by comma-separated security policy names (string list).
   - **Threat Level:** Filter by threat severity level (LOW, MEDIUM, HIGH) (string).
@@ -73,32 +73,37 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## SOC Insights
+## IQ for TD Insights
 
 - **Parameters:**
 
-  - **Status:** Filter Insights by their current status (ACTIVE, CLOSED) (string).
-  - **Threat Type:** Filter Insights by the type of threat detected (string).
-  - **Priority:** Filter Insights by priority level (LOW, INFO, MEDIUM, HIGH, CRITICAL) (string).
+  - **Status:** Filter Insights by their current status. Defaults to `ALL`; when `ALL` is selected, no status filter is sent to the API (string).
+  - **Severity:** Filter Insights by severity level (LOW, MEDIUM, HIGH, CRITICAL). Defaults to `ALL`; when `ALL` is selected, no severity filter is sent to the API (string).
+  - **Name:** Filter by the user-facing insight name (case-insensitive partial match) (string).
+  - **Threat Properties:** Filter by comma-separated threat properties, e.g. `malware,phishing,ransomware` (string).
+  - **Date Created:** Filter by the insight creation timestamp. Provide an RFC 3339 date-time value (e.g., `2025-12-19T07:01:56Z`); only insights created on that specific day are returned; this is a single-day filter, not a range from this date to now (string).
+  - **Insight ID:** Return a specific insight by its unique display identifier (string).
+  - **Indicators:** Filter by comma-separated threat indicators; matches insights whose indicators array contains any of the listed values (string).
+  - **Assets:** Filter by comma-separated assets; matches insights whose assets array contains any of the listed values (string).
+  - **User:** Filter by comma-separated users; matches insights whose users array contains any of the listed values (string).
 
-- **Severity Mapping of SOC Insights:**
+- **Severity Mapping of IQ for TD Insights:**
 
-  | Priority Level | SOAR Container Severity |
+  | Severity Level | SOAR Container Severity |
   |----------------|------------------------|
   | CRITICAL | High |
   | HIGH | High |
   | MEDIUM | Medium |
   | LOW | Low |
-  | INFO | Low |
 
 - **Container Creation:**\
-  Each SOC Insight will create a separate container in Splunk SOAR with relevant metadata and artifacts containing the insight details.
+  Each IQ for TD Insight will create a separate container in Splunk SOAR with relevant metadata and artifacts containing the insight details.
 
 - **Container Updates:**\
-  SOC Insight containers and artifacts will not be updated after initial ingestion, even if the insight is updated in Infoblox.
+  IQ for TD Insight containers and artifacts will not be updated after initial ingestion, even if the insight is updated in Infoblox.
 
-- **Event Deduplication:**\
-  Events will be deduplicated based on the event ID to prevent duplicate containers.
+- **Insight Deduplication:**\
+  Insights will be deduplicated based on the insight ID to prevent duplicate containers.
 
 ______________________________________________________________________
 
@@ -111,7 +116,7 @@ ______________________________________________________________________
   DNS Security Events ingestion type uses time-based filtering for incremental polling. The timestamp of the last fetched event will be used as the new polling start time, ensuring only new events are ingested in subsequent polls.
 
 - **Multiple Assets Configuration:**\
-  For organizations that need to ingest both DNS Security Events and SOC Insights simultaneously, configure two separate assets, one for each ingestion type.
+  For organizations that need to ingest both DNS Security Events and IQ for TD Insights simultaneously, configure two separate assets, one for each ingestion type.
 
 ______________________________________________________________________
 
@@ -141,13 +146,19 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 **network** | optional | string | Filter by comma-separated network name, on-premises host, endpoint, or DFP name (DNS Security Events) |
 **limit** | optional | numeric | Specify the maximum number of events to fetch (default: 100) (DNS Security Events) |
 **max_hours_backwards** | optional | numeric | Specify the number of hours of historical data to retrieve for manual polling (default: 24 hours) (DNS Security Events) |
-**soc_status** | optional | string | Filter by SOC Insight status (Infoblox SOC Insight) |
-**soc_threat_type** | optional | string | Filter by SOC Insight threat type detected (Infoblox SOC Insight) |
-**soc_priority** | optional | string | Filter by SOC Insight priority level (Infoblox SOC Insight) |
+**iq_for_td_status** | optional | string | Filter by IQ for TD Insight status (Infoblox IQ for TD Insight) |
+**iq_for_td_name** | optional | string | Filter by insight name (case-insensitive partial match) (Infoblox IQ for TD Insight) |
+**iq_for_td_severity** | optional | string | Filter by IQ for TD Insight severity level (Infoblox IQ for TD Insight) |
+**iq_for_td_threat_properties** | optional | string | Filter by comma-separated threat properties (e.g. malware,phishing,ransomware) (Infoblox IQ for TD Insight) |
+**iq_for_td_date_created** | optional | string | Return insights created on this RFC 3339 date (e.g. 2025-12-19T07:01:56Z); only records for that specific day are returned, not a range from this date to now (Infoblox IQ for TD Insight) |
+**iq_for_td_insight_id** | optional | string | Return a specific insight by its unique identifier (Infoblox IQ for TD Insight) |
+**iq_for_td_indicators** | optional | string | Filter by comma-separated threat indicators (Infoblox IQ for TD Insight) |
+**iq_for_td_assets** | optional | string | Filter by comma-separated assets (Infoblox IQ for TD Insight) |
+**iq_for_td_user** | optional | string | Filter by comma-separated users (Infoblox IQ for TD Insight) |
 
 ### Supported Actions
 
-[on poll](#action-on-poll) - Ingest data from Infoblox (DNS Security Events or SOC Insights based on configuration) <br>
+[on poll](#action-on-poll) - Ingest data from Infoblox (DNS Security Events or IQ for TD Insights based on configuration) <br>
 [test connectivity](#action-test-connectivity) - Validate the asset configuration for connectivity using supplied configuration <br>
 [initiate indicator intel lookup](#action-initiate-indicator-intel-lookup) - Initiate an indicator investigation using Infoblox Dossier <br>
 [get indicator intel lookup result](#action-get-indicator-intel-lookup-result) - Retrieve the result of a previously initiated Dossier lookup for an indicator (IP/URL/Host/MAC/Hash) <br>
@@ -157,7 +168,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [create network list](#action-create-network-list) - Create a Network List with specified name, items, and optional description <br>
 [update network list](#action-update-network-list) - Update metadata and CIDRs of a specified network list <br>
 [get network list](#action-get-network-list) - Retrieve network lists and their metadata <br>
-[get soc insights assets](#action-get-soc-insights-assets) - Retrieve the list of associated assets for a given Insight ID <br>
+[get iq for td insights assets](#action-get-iq-for-td-insights-assets) - Retrieve the list of associated assets for a given Insight ID <br>
 [remove network list](#action-remove-network-list) - Remove a specific network list by ID <br>
 [host asset data lookup](#action-host-asset-data-lookup) - Look up host asset data using IPAM host information to retrieve detailed host information from Infoblox <br>
 [dns record lookup](#action-dns-record-lookup) - Perform a DNS record query to retrieve associated IPs or domains from Infoblox DDI <br>
@@ -170,13 +181,16 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [create security policy](#action-create-security-policy) - Create a Security Policy, including its name, rules, associated network lists, DNS Forwarding Proxies (DFPs) etc <br>
 [update custom list items](#action-update-custom-list-items) - Insert or remove individual items (e.g., IPs, domains) in a custom list <br>
 [update security policy](#action-update-security-policy) - Update a specific Security Policy, including its name, rules, associated network lists, DNS Forwarding Proxies (DFPs) etc <br>
-[get soc insights comments](#action-get-soc-insights-comments) - Retrieve the list of comments associated with a specific Insight ID from Infoblox, optionally filtered by a time range <br>
-[get soc insights indicators](#action-get-soc-insights-indicators) - Retrieve a filtered list of indicators associated with a specific Insight ID from Infoblox, supporting multiple filter parameters <br>
-[get soc insights events](#action-get-soc-insights-events) - Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox SOC Insights
+[get iq for td insights indicators](#action-get-iq-for-td-insights-indicators) - Retrieve a filtered list of indicators associated with a specific Insight ID from Infoblox, supporting multiple filter parameters <br>
+[get iq for td insights events](#action-get-iq-for-td-insights-events) - Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox IQ for TD Insights <br>
+[get iq for td insight details](#action-get-iq-for-td-insight-details) - Retrieve the full detail view for a single IQ for TD Insight, including counts, severity, top indicators/assets, threat actors, and recommendations <br>
+[update iq for td insight status](#action-update-iq-for-td-insight-status) - Update the workflow status of a specific IQ for TD Insight, optionally recording an analyst comment describing the change <br>
+[execute iq for td recommendation actions](#action-execute-iq-for-td-recommendation-actions) - Execute a single recommendation action on an IQ for TD Insight, referencing the recommendation by the ID returned in the 'get iq for td insight details' action <br>
+[undo iq for td recommendation action](#action-undo-iq-for-td-recommendation-action) - Reverse a previously executed recommendation action using the audit entry ID returned by the 'execute iq for td recommendation actions' action
 
 ## action: 'on poll'
 
-Ingest data from Infoblox (DNS Security Events or SOC Insights based on configuration)
+Ingest data from Infoblox (DNS Security Events or IQ for TD Insights based on configuration)
 
 Type: **ingest** <br>
 Read only: **True**
@@ -407,7 +421,7 @@ action_result.data.\*.tasks.\*.end_time | string | | 2025-07-30T12:57:16.534Z |
 action_result.data.\*.tasks.\*.end_ts | numeric | | 1753880236534 |
 action_result.data.\*.tasks.\*.id | string | | 0059f4ae-ac28-45fa-8a77-7ac6067cc1f3 |
 action_result.data.\*.tasks.\*.params.source | string | | urlhaus |
-action_result.data.\*.tasks.\*.params.target | string | | google.com |
+action_result.data.\*.tasks.\*.params.target | string | `ip` `ipv6` `url` `email` `hash` `host name` | google.com |
 action_result.data.\*.tasks.\*.params.type | string | | host |
 action_result.data.\*.tasks.\*.results | string | | |
 action_result.data.\*.tasks.\*.rl | boolean | | True False |
@@ -416,9 +430,9 @@ action_result.data.\*.tasks.\*.start_ts | numeric | | 1753880236526 |
 action_result.data.\*.tasks.\*.state | string | | completed |
 action_result.data.\*.tasks.\*.status | string | | success |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'get indicator intel lookup result'
 
@@ -470,9 +484,9 @@ action_result.data.\*.results.\*.status | string | | |
 action_result.data.\*.results.\*.time | numeric | | |
 action_result.data.\*.results.\*.v | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'ip asset data lookup'
 
@@ -522,9 +536,9 @@ action_result.data.\*.results.\*.tags.Snow_sys_id | string | | 759b5756479212106
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.data.\*.results.\*.usage | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'get custom list'
 
@@ -631,9 +645,9 @@ action_result.summary.description | string | | temporary desc |
 action_result.summary.name | string | | test-network |
 action_result.summary.network_list_id | numeric | | 1859146 |
 action_result.summary.security_policy_id | numeric | | 204970 |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'update network list'
 
@@ -668,9 +682,9 @@ action_result.summary.description | string | | update desc |
 action_result.summary.name | string | | test update |
 action_result.summary.network_list_id | numeric | | 1859146 |
 action_result.summary.security_policy_id | numeric | | 204970 |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'get network list'
 
@@ -703,11 +717,11 @@ action_result.data.\*.results.\*.id | numeric | | |
 action_result.data.\*.results.\*.name | string | | |
 action_result.data.\*.results.\*.policy_id | numeric | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
-## action: 'get soc insights assets'
+## action: 'get iq for td insights assets'
 
 Retrieve the list of associated assets for a given Insight ID
 
@@ -719,35 +733,41 @@ Read only: **True**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **insight_id** | required | ID of the insight to retrieve assets from | string | `infoblox insight id` |
-**asset_ip** | optional | Filter assets by IP address | string | `ip` `ipv6` |
-**mac_address** | optional | Filter assets by MAC address | string | `mac address` |
-**os_version** | optional | Filter assets by operating system version | string | |
-**user** | optional | Filter assets by associated user | string | `user name` |
-**limit** | optional | Maximum number of results to return | numeric | |
-**from** | optional | Filter by assets changed after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
-**to** | optional | Filter by assets changed before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
+**device_name** | optional | Filter assets by device or host name (case-insensitive partial match) | string | |
+**indicators** | optional | Filter assets by comma-separated threat indicators (e.g. indicator1,indicator2) | string | |
+**users** | optional | Filter assets by comma-separated user names (e.g. user1,user2) | string | `user name` |
+**ip_address** | optional | Filter assets by comma-separated IP addresses | string | `ip` `ipv6` |
+**is_verified** | optional | Filter by asset verification state: True (verified only) or False (unverified only); leave unselected to return both | string | |
+**limit** | optional | Maximum number of results to return (default: 1000) | numeric | |
 
 #### Action Output
 
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
-action_result.parameter.asset_ip | string | `ip` `ipv6` | |
-action_result.parameter.from | string | | |
-action_result.parameter.insight_id | string | `infoblox insight id` | |
-action_result.parameter.limit | numeric | | 1 |
-action_result.parameter.mac_address | string | `mac address` | |
-action_result.parameter.os_version | string | | |
-action_result.parameter.to | string | | |
-action_result.parameter.user | string | `user name` | |
-action_result.data.\*.cmac | string | `mac address` | |
-action_result.data.\*.mostRecentAction | string | | Not Blocked |
-action_result.data.\*.osVersion | string | | |
-action_result.data.\*.qip | string | `ip` `ipv6` | |
-action_result.data.\*.threatLevelMax | string | | |
-action_result.data.\*.user | string | `user name` | |
-action_result.summary | string | | |
-action_result.message | string | | |
+action_result.parameter.device_name | string | | DESKTOP-1234 |
+action_result.parameter.indicators | string | | ikhwanschoolday.us |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.ip_address | string | `ip` `ipv6` | 192.168.5.10 |
+action_result.parameter.is_verified | string | | True False |
+action_result.parameter.limit | numeric | | 1000 |
+action_result.parameter.users | string | `user name` | john.doe |
+action_result.data.\*.ip_address | string | `ip` `ipv6` | |
+action_result.data.\*.mac_address | string | `mac address` | |
+action_result.data.\*.device_name | string | | |
+action_result.data.\*.is_verified | boolean | | |
+action_result.data.\*.is_risky | boolean | | |
+action_result.data.\*.total_events | numeric | | |
+action_result.data.\*.indicators | string | | |
+action_result.data.\*.users | string | `user name` | |
+action_result.data.\*.description | string | | |
+action_result.data.\*.locations | string | | |
+action_result.data.\*.first_detected | string | | |
+action_result.data.\*.last_detected | string | | |
+action_result.summary.insight_id | string | | |
+action_result.summary.total_assets | numeric | | |
+action_result.summary.limit_applied | numeric | | |
+action_result.message | string | | Successfully retrieved 1 insight asset(s) |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -819,9 +839,9 @@ action_result.data.\*.results.\*.tags.Rapid7_scan_time | string | | 2025-07-21 0
 action_result.data.\*.results.\*.tags.Rapid7_sync | string | | true |
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'dns record lookup'
 
@@ -858,15 +878,15 @@ action_result.data.\*.results.\*.name_in_zone | string | | |
 action_result.data.\*.results.\*.nios_metadata | string | | |
 action_result.data.\*.results.\*.options | string | | |
 action_result.data.\*.results.\*.provider_metadata | string | | |
-action_result.data.\*.results.\*.rdata.address | string | | 192.168.10.101 |
+action_result.data.\*.results.\*.rdata.address | string | `ip` `ipv6` | 192.168.10.101 |
 action_result.data.\*.results.\*.ttl | numeric | | |
 action_result.data.\*.results.\*.type | string | | |
 action_result.data.\*.results.\*.updated_at | string | | |
 action_result.data.\*.results.\*.view_name | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'dhcp lease lookup'
 
@@ -902,9 +922,9 @@ action_result.data.\*.results.\*.space | string | | |
 action_result.data.\*.results.\*.starts | string | | |
 action_result.data.\*.results.\*.state | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'indicator threat lookup'
 
@@ -947,9 +967,9 @@ action_result.data.\*.threat.\*.hash_type | string | | SHA256 |
 action_result.data.\*.threat.\*.threat_label | string | | IP IoC |
 action_result.data.\*.threat.\*.up | string | | true |
 action_result.summary.indicator_type | string | | All |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'create custom list'
 
@@ -995,9 +1015,9 @@ action_result.summary.custom_list_name | string | | temp-custom |
 action_result.summary.item_count | numeric | | 2 |
 action_result.summary.total_objects | numeric | | 1 |
 action_result.summary.total_objects_successful | numeric | | 1 |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'update custom list'
 
@@ -1028,7 +1048,7 @@ action_result.parameter.confidence_level | string | | HIGH |
 action_result.parameter.custom_list_id | numeric | | 831224 |
 action_result.parameter.description | string | | Updated description for the custom list |
 action_result.parameter.name | string | | updated_custom_list |
-action_result.parameter.tags | string | | {"category": "security", "priority": "high"} |
+action_result.parameter.tags | string | | {"category": "security", "severity": "high"} |
 action_result.parameter.threat_level | string | | MEDIUM |
 action_result.data.\*.results.confidence_level | string | | LOW MEDIUM HIGH |
 action_result.data.\*.results.description | string | | Updated Custom List Description Updated security blocklist for malicious domains |
@@ -1041,9 +1061,9 @@ action_result.summary.custom_list_name | string | | temp-custom |
 action_result.summary.item_count | numeric | | 2 |
 action_result.summary.total_objects | numeric | | 1 |
 action_result.summary.total_objects_successful | numeric | | 1 |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'remove security policy'
 
@@ -1110,9 +1130,9 @@ action_result.data.\*.results.\*.rules.\*.description | string | | Suspicious de
 action_result.data.\*.results.\*.scope_expr | string | | |
 action_result.data.\*.results.\*.tags | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'create security policy'
 
@@ -1162,9 +1182,9 @@ action_result.data.\*.results.rules.\*.description | string | | Suspicious desti
 action_result.data.\*.results.scope_expr | string | | |
 action_result.data.\*.results.tags | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'update custom list items'
 
@@ -1196,9 +1216,9 @@ action_result.data.\*.deleted_items.\*.item | string | | 193.56.2.11/32 |
 action_result.data.\*.deleted_items.\*.status | numeric | | -1 |
 action_result.data.\*.deleted_items.\*.status_details | string | | |
 action_result.summary | string | | |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
 ## action: 'update security policy'
 
@@ -1253,45 +1273,11 @@ action_result.summary.name | string | | temp-policy |
 action_result.summary.policy_id | numeric | | 227005 |
 action_result.summary.update_status | string | | Success |
 action_result.summary.updated_time | string | | 2025-07-31T05:16:37Z |
+action_result.message | string | | |
 summary.total_objects | numeric | | |
 summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
 
-## action: 'get soc insights comments'
-
-Retrieve the list of comments associated with a specific Insight ID from Infoblox, optionally filtered by a time range
-
-Type: **investigate** <br>
-Read only: **True**
-
-#### Action Parameters
-
-PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
---------- | -------- | ----------- | ---- | --------
-**insight_id** | required | ID of the insight to retrieve comments from | string | `infoblox insight id` |
-**from** | optional | Filter by comments changed after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
-**to** | optional | Filter by comments changed before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
-
-#### Action Output
-
-DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
---------- | ---- | -------- | --------------
-action_result.status | string | | success failed |
-action_result.parameter.from | string | | 2025-06-11T04:10:00.000 |
-action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
-action_result.parameter.to | string | | 2025-06-11T04:10:00.000 |
-action_result.data.\*.comments.\*.commentsChanger | string | | dhruvil.bhatt@crestdatasys.com |
-action_result.data.\*.comments.\*.dateChanged | string | | 2025-07-08T11:55:49.551 |
-action_result.data.\*.comments.\*.newComment | string | | ServiceNow incident: INC0010052 |
-action_result.data.\*.comments.\*.status | string | | Active |
-action_result.summary.from_filter | string | | Not specified |
-action_result.summary.insight_id | string | | d00070a8-6ce9-40dd-8e2e-b8b7c05b303f |
-action_result.summary.to_filter | string | | Not specified |
-summary.total_objects | numeric | | 1 |
-summary.total_objects_successful | numeric | | 1 |
-action_result.message | string | | |
-
-## action: 'get soc insights indicators'
+## action: 'get iq for td insights indicators'
 
 Retrieve a filtered list of indicators associated with a specific Insight ID from Infoblox, supporting multiple filter parameters
 
@@ -1303,45 +1289,48 @@ Read only: **True**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **insight_id** | required | ID of the insight to retrieve indicators from | string | `infoblox insight id` |
-**confidence** | optional | Filter by confidence score | string | |
-**indicator** | optional | Filter by specific indicator value | string | |
-**actor** | optional | Filter by threat actor | string | |
-**action** | optional | Filter by action taken | string | |
-**from** | optional | Filter by indicators seen after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
-**to** | optional | Filter by indicators seen before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS | string | |
-**limit** | optional | Specify the maximum number of results to return (default: 100) | numeric | |
+**indicators** | optional | Filter by comma-separated threat indicators (e.g. indicator1,indicator2) | string | |
+**threat_level** | optional | Filter indicators by threat level (numeric value indicating severity) | string | |
+**status** | optional | Filter by comma-separated indicator blocking status (e.g. Blocked,Not Blocked) | string | |
+**users** | optional | Filter indicators by comma-separated user names | string | `user name` |
+**detected_at** | optional | Return indicators detected on this RFC 3339 date (e.g. 2025-12-19T03:00:00Z); only records for that specific day are returned, not a range from this date to now | string | |
+**limit** | optional | Specify the maximum number of results to return (default: 1000) | numeric | |
 
 #### Action Output
 
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
-action_result.parameter.action | string | | Not Blocked |
-action_result.parameter.actor | string | | spam_azure_aws |
-action_result.parameter.confidence | string | | 3 |
-action_result.parameter.from | string | | 2025-06-11T04:10:00.000 |
-action_result.parameter.indicator | string | | ikhwanschoolday.us |
+action_result.parameter.indicators | string | | ikhwanschoolday.us |
+action_result.parameter.threat_level | string | | 3 |
+action_result.parameter.status | string | | Not Blocked |
+action_result.parameter.users | string | `user name` | john.doe |
+action_result.parameter.detected_at | string | | 2025-12-19T03:00:00Z |
 action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
-action_result.parameter.limit | numeric | | 100 |
-action_result.parameter.to | string | | 2025-06-11T04:10:00.000 |
-action_result.data.\*.indicators.\*.action | string | | Not Blocked |
-action_result.data.\*.indicators.\*.actor | string | | spam_azure_aws |
-action_result.data.\*.indicators.\*.confidence | string | | 3 |
-action_result.data.\*.indicators.\*.count | numeric | | 1 |
-action_result.data.\*.indicators.\*.feedName | string | | AntiMalware |
-action_result.data.\*.indicators.\*.indicator | string | | ikhwanschoolday.us |
-action_result.data.\*.indicators.\*.macAddress | string | | 64:c2:b3:d9:41:3d |
-action_result.data.\*.indicators.\*.threatLevelMax | string | | 3 |
+action_result.parameter.limit | numeric | | 1000 |
+action_result.data.\*.indicators.\*.status | string | | Not Blocked |
+action_result.data.\*.indicators.\*.threat_indicator | string | | ikhwanschoolday.us |
+action_result.data.\*.indicators.\*.threat_level | numeric | | 3 |
+action_result.data.\*.indicators.\*.confidence_level | numeric | | |
+action_result.data.\*.indicators.\*.total_events | numeric | | |
+action_result.data.\*.indicators.\*.threat_actors | string | | |
+action_result.data.\*.indicators.\*.verified_assets | string | | |
+action_result.data.\*.indicators.\*.unverified_assets | string | | |
+action_result.data.\*.indicators.\*.users | string | `user name` | |
+action_result.data.\*.indicators.\*.description | string | | |
+action_result.data.\*.indicators.\*.detected_at | string | | |
+action_result.data.\*.indicators.\*.first_detected | string | | |
+action_result.data.\*.indicators.\*.last_detected | string | | |
 action_result.summary.insight_id | string | | d00070a8-6ce9-40dd-8e2e-b8b7c05b303f |
 action_result.summary.limit_applied | numeric | | 1 |
 action_result.summary.total_indicators | numeric | | 1 |
-summary.total_objects | numeric | | |
-summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
+action_result.message | string | | Successfully retrieved 1 insight indicator(s) |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
 
-## action: 'get soc insights events'
+## action: 'get iq for td insights events'
 
-Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox SOC Insights
+Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox IQ for TD Insights
 
 Type: **investigate** <br>
 Read only: **True**
@@ -1350,48 +1339,223 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**insight_id** | required | ID of the insight to retrieve events from | string | |
-**device_ip** | optional | Filter assets by Device IP | string | `ip` `ipv6` |
-**query** | optional | Filter by query string | string | |
-**query_type** | optional | Filter events by DNS query type (e.g., TXT, A, MX) | string | |
-**source** | optional | Filter events by the threat intelligence source or feed (e.g., DFP (DFP)) | string | |
-**indicator** | optional | Filter events by a specific threat indicator such as a domain, IP, or hash (e.g., hmdns.top) | string | |
+**insight_id** | required | ID of the insight to retrieve events from | string | `infoblox insight id` |
 **threat_level** | optional | Filter by threat level | string | |
-**confidence_level** | optional | Filter by confidence level | string | |
-**limit** | optional | Specify the maximum number of results to return | numeric | |
-**from** | optional | Filter by events detected after this time in format YYYY-MM-DDTHH:mm:ss.SSS | string | |
-**to** | optional | Filter by events detected before this time in format YYYY-MM-DDTHH:mm:ss.SSS | string | |
+**threat_confidence** | optional | Filter by threat confidence score | string | |
+**indicator** | optional | Filter events by a specific threat indicator such as a domain, IP, or hash (e.g., hmdns.top) | string | |
+**detected_from** | optional | Filter events detected on or after this RFC 3339 timestamp (e.g. 2025-12-19T03:00:00Z) | string | |
+**detected_to** | optional | Filter events detected on or before this RFC 3339 timestamp (e.g. 2025-12-19T03:00:00Z) | string | |
+**tclass** | optional | Filter by threat class category (e.g., Malware, Phishing, C2, Data Exfiltration) | string | |
+**query** | optional | Filter by the DNS query name (the domain or hostname that was queried) | string | |
+**device_ip** | optional | Filter events by comma-separated device IP addresses | string | `ip` `ipv6` |
+**device_name** | optional | Filter by the name of the device that generated the event | string | |
+**user** | optional | Filter events by comma-separated user names | string | `user name` |
+**source** | optional | Filter events by the network source identifier where the DNS query originated | string | |
+**limit** | optional | Specify the maximum number of results to return (default: 5000, max: 5000) | numeric | |
 
 #### Action Output
 
 DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failed |
-action_result.parameter.confidence_level | string | | High |
+action_result.parameter.threat_confidence | string | | High |
 action_result.parameter.device_ip | string | `ip` `ipv6` | 87.121.84.128 |
-action_result.parameter.from | string | | 2025-07-09T12:48:48.000 |
+action_result.parameter.device_name | string | | DESKTOP-1234 |
+action_result.parameter.detected_from | string | | 2025-12-19T03:00:00Z |
+action_result.parameter.detected_to | string | | 2025-12-19T03:00:00Z |
 action_result.parameter.indicator | string | | hmdns.top |
-action_result.parameter.insight_id | string | | ea970c56-9d69-4844-8dc2-77d9be724c43 |
-action_result.parameter.limit | numeric | | 100 |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.limit | numeric | | 5000 |
 action_result.parameter.query | string | | aaa.hmdns.top. |
-action_result.parameter.query_type | string | | TXT |
+action_result.parameter.tclass | string | | EmergentDomain |
+action_result.parameter.user | string | `user name` | john.doe |
 action_result.parameter.source | string | | CREST_DFP (DFP) |
 action_result.parameter.threat_level | string | | High |
-action_result.parameter.to | string | | 2025-07-09T12:48:48.000 |
 action_result.data.\*.events.\*.action | string | | Block |
-action_result.data.\*.events.\*.confidenceLevel | string | | High |
-action_result.data.\*.events.\*.deviceCountry | string | | United States |
-action_result.data.\*.events.\*.deviceIp | string | `ip` `ipv6` | 87.121.84.128 |
-action_result.data.\*.events.\*.deviceName | string | | 87.121.84.128 |
-action_result.data.\*.events.\*.macAddress | string | | 64:c2:b3:d9:41:3d |
-action_result.data.\*.events.\*.osVersion | string | | Chrome OS |
+action_result.data.\*.events.\*.threat_confidence | string | | High |
+action_result.data.\*.events.\*.device_country | string | | United States |
+action_result.data.\*.events.\*.device_ip | string | `ip` `ipv6` | 87.121.84.128 |
+action_result.data.\*.events.\*.device_name | string | | 87.121.84.128 |
+action_result.data.\*.events.\*.mac_address | string | `mac address` | 64:c2:b3:d9:41:3d |
+action_result.data.\*.events.\*.os_version | string | | Chrome OS |
 action_result.data.\*.events.\*.policy | string | | Default Global Policy |
-action_result.data.\*.events.\*.threatFamily | string | | EmergentDomain |
-action_result.data.\*.events.\*.threatLevel | string | | High |
-action_result.summary | string | | |
-summary.total_objects | numeric | | |
-summary.total_objects_successful | numeric | | |
-action_result.message | string | | |
+action_result.data.\*.events.\*.tfamily | string | | EmergentDomain |
+action_result.data.\*.events.\*.tproperty | string | | |
+action_result.data.\*.events.\*.tclass | string | | |
+action_result.data.\*.events.\*.threat_level | string | | High |
+action_result.data.\*.events.\*.detected_at | string | | |
+action_result.data.\*.events.\*.query | string | | |
+action_result.data.\*.events.\*.query_type | string | | |
+action_result.data.\*.events.\*.user | string | `user name` | |
+action_result.data.\*.events.\*.actor_name | string | | |
+action_result.data.\*.events.\*.source | string | | |
+action_result.data.\*.events.\*.indicator | string | | |
+action_result.data.\*.events.\*.response | string | | |
+action_result.data.\*.events.\*.dns_view | string | | |
+action_result.data.\*.events.\*.feed | string | | |
+action_result.data.\*.events.\*.dhcp_fingerprint | string | | |
+action_result.data.\*.events.\*.response_region | string | | |
+action_result.data.\*.events.\*.response_country | string | | |
+action_result.data.\*.events.\*.device_region | string | | |
+action_result.summary.insight_id | string | | 292GTP9s |
+action_result.summary.total_events | numeric | | 48 |
+action_result.summary.limit_applied | numeric | | 100 |
+action_result.message | string | | Successfully retrieved 48 insight event(s) |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get iq for td insight details'
+
+Retrieve the full detail view for a single IQ for TD Insight, including counts, severity, top indicators/assets, threat actors, and recommendations
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**insight_id** | required | ID of the insight to retrieve details for | string | `infoblox insight id` |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failed |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.data.\*.insight_id | string | `infoblox insight id` | |
+action_result.data.\*.name | string | | |
+action_result.data.\*.description | string | | |
+action_result.data.\*.severity | string | | Critical High Medium Low |
+action_result.data.\*.status | string | | |
+action_result.data.\*.date_created | string | | |
+action_result.data.\*.evaluation_start_date | string | | |
+action_result.data.\*.evaluation_end_date | string | | |
+action_result.data.\*.total_events | numeric | | |
+action_result.data.\*.total_indicators | numeric | | |
+action_result.data.\*.total_users | numeric | | |
+action_result.data.\*.total_assets | numeric | | |
+action_result.data.\*.total_verified_assets | numeric | | |
+action_result.data.\*.total_unverified_assets | numeric | | |
+action_result.data.\*.expiring_in_days | numeric | | |
+action_result.data.\*.threat_properties | string | | |
+action_result.data.\*.time_saved_seconds | numeric | | |
+action_result.data.\*.top_indicators.\*.indicator | string | | |
+action_result.data.\*.top_indicators.\*.description | string | | |
+action_result.data.\*.top_indicators.\*.threat_actors.\*.id | string | | |
+action_result.data.\*.top_indicators.\*.threat_actors.\*.name | string | | |
+action_result.data.\*.top_assets.\*.asset | string | | |
+action_result.data.\*.top_assets.\*.description | string | | |
+action_result.data.\*.threat_actors.\*.actor_name | string | | |
+action_result.data.\*.threat_actors.\*.actor_description | string | | |
+action_result.data.\*.overview | string | | |
+action_result.data.\*.key_recommendations.\*.id | string | `infoblox recommendation id` | b1c2d3e4-f5a6-7890-abcd-ef1234567890 |
+action_result.data.\*.key_recommendations.\*.recommendation | string | | |
+action_result.data.\*.key_recommendations.\*.type | string | | |
+action_result.data.\*.key_recommendations.\*.action_taken | string | | |
+action_result.summary.insight_id | string | | |
+action_result.summary.status | string | | |
+action_result.summary.severity | string | | |
+action_result.summary.total_events | numeric | | |
+action_result.summary.total_indicators | numeric | | |
+action_result.summary.total_assets | numeric | | |
+action_result.summary.total_users | numeric | | |
+action_result.message | string | | Successfully retrieved details for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'update iq for td insight status'
+
+Update the workflow status of a specific IQ for TD Insight, optionally recording an analyst comment describing the change
+
+Type: **generic** <br>
+Read only: **False**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**insight_id** | required | ID of the insight whose status should be updated | string | `infoblox insight id` |
+**status** | required | New workflow status to assign to the insight | string | |
+**comment** | optional | Optional analyst comment explaining the status change | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failed |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.status | string | | Resolved |
+action_result.parameter.comment | string | | False positive - verified with user |
+action_result.data | string | | |
+action_result.summary.insight_id | string | | |
+action_result.summary.status | string | | |
+action_result.message | string | | Successfully updated status to 'Resolved' for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'execute iq for td recommendation actions'
+
+Execute a single recommendation action on an IQ for TD Insight, referencing the recommendation by the ID returned in the 'get iq for td insight details' action
+
+Type: **contain** <br>
+Read only: **False**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**insight_id** | required | Single ID of the insight whose recommendation is being actioned; comma-separated multiple values are not supported | string | `infoblox insight id` |
+**recommendation_id** | required | Single ID of the recommendation to execute (from the 'key_recommendations' output of 'get iq for td insight details'); comma-separated multiple values are not supported | string | `infoblox recommendation id` |
+**action** | optional | Optional override of the action verb applied to the recommendation (e.g. block, mark_risky, update_policy); when empty, the server picks the canonical verb for the recommendation type | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failed |
+action_result.parameter.insight_id | string | `infoblox insight id` | ea970c56-9d69-4844-8dc2-77d9be724c43 |
+action_result.parameter.recommendation_id | string | `infoblox recommendation id` | b1c2d3e4-f5a6-7890-abcd-ef1234567890 |
+action_result.parameter.action | string | | block |
+action_result.data.\*.results.\*.action | string | | block mark_risky update_policy |
+action_result.data.\*.results.\*.status | string | | succeeded failed |
+action_result.data.\*.results.\*.audit_entry_id | string | `infoblox audit entry id` | 3f8a1b2c-4d5e-6789-abcd-ef0123456789 |
+action_result.data.\*.results.\*.reason | string | | applied already_applied action_failed resource_not_found invalid_request not_eligible |
+action_result.data.\*.results.\*.message | string | | |
+action_result.summary.insight_id | string | | |
+action_result.summary.recommendation_id | string | `infoblox recommendation id` | |
+action_result.summary.status | string | | succeeded failed |
+action_result.message | string | | Successfully executed recommendation action for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'undo iq for td recommendation action'
+
+Reverse a previously executed recommendation action using the audit entry ID returned by the 'execute iq for td recommendation actions' action
+
+Type: **correct** <br>
+Read only: **False**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**audit_entry_id** | required | Single audit log entry ID to undo (from the 'execute iq for td recommendation actions' output); comma-separated multiple values are not supported | string | `infoblox audit entry id` |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failed |
+action_result.parameter.audit_entry_id | string | `infoblox audit entry id` | 3f8a1b2c-4d5e-6789-abcd-ef0123456789 |
+action_result.data.\*.result.action | string | | allow undo_risky revert_policy |
+action_result.data.\*.result.status | string | | succeeded failed |
+action_result.summary.audit_entry_id | string | | |
+action_result.summary.action | string | | |
+action_result.summary.status | string | | |
+action_result.message | string | | Successfully performed undo action 'allow' for audit entry ID: 3f8a1b2c-4d5e-6789-abcd-ef0123456789 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
 
 ______________________________________________________________________
 

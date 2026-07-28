@@ -1,7 +1,7 @@
 {
     "appid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "name": "Infoblox Threat Defense with DDI",
-    "description": "This app integrates with Infoblox Threat Defense with DDI to provide DNS Security, Threat Intelligence, and Centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.",
+    "description": "This app integrates with Infoblox Threat Defense with DDI to provide DNS security, threat intelligence, and centralized DDI (DNS, DHCP, and IP Address Management) capabilities. It enables automated lookups of IP and host asset data, and management of custom lists for security policies.",
     "type": "network security",
     "product_vendor": "Infoblox",
     "logo": "logo_infoblox.svg",
@@ -11,8 +11,8 @@
     "product_version_regex": ".*",
     "publisher": "Infoblox",
     "license": "Copyright 2025-2026 Infoblox Inc.",
-    "app_version": "1.0.2",
-    "utctime_updated": "2026-08-04T00:11:11.189015Z",
+    "app_version": "2.0.0",
+    "utctime_updated": "2025-07-02T09:45:00.000000Z",
     "package_name": "phantom_infoblox",
     "main_module": "infoblox_connector.py",
     "min_phantom_version": "6.4.1",
@@ -38,7 +38,7 @@
             "data_type": "string",
             "value_list": [
                 "DNS Security Events",
-                "SOC Insights"
+                "IQ for TD Insights"
             ]
         },
         "queried_name": {
@@ -105,40 +105,75 @@
             "default": 24,
             "order": 13
         },
-        "soc_status": {
-            "description": "Filter by SOC Insight status (Infoblox SOC Insight)",
+        "iq_for_td_status": {
+            "description": "Filter by IQ for TD Insight status (Infoblox IQ for TD Insight)",
             "data_type": "string",
             "order": 14,
-            "default": "Active",
+            "default": "ALL",
             "value_list": [
-                "Active",
-                "Closed"
+                "ALL",
+                "Needs Review",
+                "In Progress",
+                "Resolved",
+                "Reopened",
+                "Accepted Risk",
+                "False Positive"
             ]
         },
-        "soc_threat_type": {
-            "description": "Filter by SOC Insight threat type detected (Infoblox SOC Insight)",
+        "iq_for_td_name": {
+            "description": "Filter by insight name (case-insensitive partial match) (Infoblox IQ for TD Insight)",
             "data_type": "string",
             "order": 15
         },
-        "soc_priority": {
-            "description": "Filter by SOC Insight priority level (Infoblox SOC Insight)",
+        "iq_for_td_severity": {
+            "description": "Filter by IQ for TD Insight severity level (Infoblox IQ for TD Insight)",
             "data_type": "string",
             "order": 16,
+            "default": "ALL",
             "value_list": [
                 "ALL",
-                "LOW",
-                "INFO",
-                "MEDIUM",
+                "CRITICAL",
                 "HIGH",
-                "CRITICAL"
+                "LOW",
+                "MEDIUM"
             ]
+        },
+        "iq_for_td_threat_properties": {
+            "description": "Filter by comma-separated threat properties (e.g. malware,phishing,ransomware) (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 17
+        },
+        "iq_for_td_date_created": {
+            "description": "Return insights created on this RFC 3339 date (e.g. 2025-12-19T07:01:56Z); only records for that specific day are returned, not a range from this date to now (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 18
+        },
+        "iq_for_td_insight_id": {
+            "description": "Return a specific insight by its unique identifier (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 19
+        },
+        "iq_for_td_indicators": {
+            "description": "Filter by comma-separated threat indicators (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 20
+        },
+        "iq_for_td_assets": {
+            "description": "Filter by comma-separated assets (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 21
+        },
+        "iq_for_td_user": {
+            "description": "Filter by comma-separated users (Infoblox IQ for TD Insight)",
+            "data_type": "string",
+            "order": 22
         }
     },
     "actions": [
         {
             "action": "on poll",
             "identifier": "on_poll",
-            "description": "Ingest data from Infoblox (DNS Security Events or SOC Insights based on configuration)",
+            "description": "Ingest data from Infoblox (DNS Security Events or IQ for TD Insights based on configuration)",
             "type": "ingest",
             "read_only": true,
             "parameters": {},
@@ -1452,6 +1487,14 @@
                 {
                     "data_path": "action_result.data.*.tasks.*.params.target",
                     "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ipv6",
+                        "url",
+                        "email",
+                        "hash",
+                        "host name"
+                    ],
                     "example_values": [
                         "google.com"
                     ]
@@ -1508,16 +1551,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -1770,16 +1813,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2003,16 +2046,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2401,16 +2444,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2531,16 +2574,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2645,16 +2688,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -2665,8 +2708,8 @@
             "versions": "EQ(*)"
         },
         {
-            "action": "get soc insights assets",
-            "identifier": "get_soc_insights_assets",
+            "action": "get iq for td insights assets",
+            "identifier": "get_iq_for_td_insights_assets",
             "description": "Retrieve the list of associated assets for a given Insight ID",
             "type": "investigate",
             "read_only": true,
@@ -2681,54 +2724,49 @@
                         "infoblox insight id"
                     ]
                 },
-                "asset_ip": {
+                "device_name": {
                     "data_type": "string",
-                    "description": "Filter assets by IP address",
-                    "order": 1,
+                    "description": "Filter assets by device or host name (case-insensitive partial match)",
+                    "order": 1
+                },
+                "indicators": {
+                    "data_type": "string",
+                    "description": "Filter assets by comma-separated threat indicators (e.g. indicator1,indicator2)",
+                    "order": 2
+                },
+                "users": {
+                    "data_type": "string",
+                    "description": "Filter assets by comma-separated user names (e.g. user1,user2)",
+                    "order": 3,
+                    "primary": true,
+                    "contains": [
+                        "user name"
+                    ]
+                },
+                "ip_address": {
+                    "data_type": "string",
+                    "description": "Filter assets by comma-separated IP addresses",
+                    "order": 4,
                     "primary": true,
                     "contains": [
                         "ip",
                         "ipv6"
                     ]
                 },
-                "mac_address": {
+                "is_verified": {
                     "data_type": "string",
-                    "description": "Filter assets by MAC address",
-                    "order": 2,
-                    "primary": true,
-                    "contains": [
-                        "mac address"
-                    ]
-                },
-                "os_version": {
-                    "data_type": "string",
-                    "description": "Filter assets by operating system version",
-                    "order": 3
-                },
-                "user": {
-                    "data_type": "string",
-                    "description": "Filter assets by associated user",
-                    "order": 4,
-                    "primary": true,
-                    "contains": [
-                        "user name"
-                    ]
+                    "description": "Filter by asset verification state: True (verified only) or False (unverified only); leave unselected to return both",
+                    "value_list": [
+                        "True",
+                        "False"
+                    ],
+                    "order": 5
                 },
                 "limit": {
                     "data_type": "numeric",
-                    "description": "Maximum number of results to return",
-                    "default": 100,
-                    "order": 5
-                },
-                "from": {
-                    "data_type": "string",
-                    "description": "Filter by assets changed after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
+                    "description": "Maximum number of results to return (default: 1000)",
+                    "default": 1000,
                     "order": 6
-                },
-                "to": {
-                    "data_type": "string",
-                    "description": "Filter by assets changed before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
-                    "order": 7
                 }
             },
             "output": [
@@ -2741,80 +2779,67 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.asset_ip",
+                    "data_path": "action_result.parameter.device_name",
                     "data_type": "string",
-                    "example_value": "192.168.5.10",
-                    "contains": [
-                        "ip",
-                        "ipv6"
+                    "example_values": [
+                        "DESKTOP-1234"
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.from",
+                    "data_path": "action_result.parameter.indicators",
                     "data_type": "string",
-                    "example_value": "2025-07-31T23:00:00.000"
+                    "example_values": [
+                        "ikhwanschoolday.us"
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.insight_id",
                     "data_type": "string",
                     "contains": [
                         "infoblox insight id"
+                    ],
+                    "example_values": [
+                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.ip_address",
+                    "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ipv6"
+                    ],
+                    "example_values": [
+                        "192.168.5.10"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.is_verified",
+                    "data_type": "string",
+                    "example_values": [
+                        "True",
+                        "False"
                     ]
                 },
                 {
                     "data_path": "action_result.parameter.limit",
                     "data_type": "numeric",
                     "example_values": [
-                        1
+                        1000
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.mac_address",
-                    "data_type": "string",
-                    "contains": [
-                        "mac address"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.os_version",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.to",
-                    "data_type": "string",
-                    "example_value": "2025-07-31T23:00:00.000"
-                },
-                {
-                    "data_path": "action_result.parameter.user",
+                    "data_path": "action_result.parameter.users",
                     "data_type": "string",
                     "contains": [
                         "user name"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.cmac",
-                    "data_type": "string",
-                    "column_name": "MAC Address",
-                    "column_order": 1,
-                    "contains": [
-                        "mac address"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.mostRecentAction",
-                    "data_type": "string",
+                    ],
                     "example_values": [
-                        "Not Blocked"
+                        "john.doe"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.osVersion",
-                    "data_type": "string",
-                    "column_name": "OS Version",
-                    "column_order": 3
-                },
-                {
-                    "data_path": "action_result.data.*.qip",
+                    "data_path": "action_result.data.*.ip_address",
                     "data_type": "string",
                     "column_name": "Asset IP",
                     "column_order": 0,
@@ -2824,27 +2849,83 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.threatLevelMax",
+                    "data_path": "action_result.data.*.mac_address",
                     "data_type": "string",
-                    "column_name": "Threat Level",
+                    "column_name": "MAC Address",
+                    "column_order": 1,
+                    "contains": [
+                        "mac address"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.device_name",
+                    "data_type": "string",
+                    "column_name": "Device Name",
                     "column_order": 2
                 },
                 {
-                    "data_path": "action_result.data.*.user",
+                    "data_path": "action_result.data.*.is_verified",
+                    "data_type": "boolean",
+                    "column_name": "Verified",
+                    "column_order": 3
+                },
+                {
+                    "data_path": "action_result.data.*.is_risky",
+                    "data_type": "boolean",
+                    "column_name": "Risky",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.data.*.total_events",
+                    "data_type": "numeric",
+                    "column_name": "Total Events",
+                    "column_order": 5
+                },
+                {
+                    "data_path": "action_result.data.*.indicators",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.users",
                     "data_type": "string",
-                    "column_name": "User",
-                    "column_order": 4,
                     "contains": [
                         "user name"
                     ]
                 },
                 {
-                    "data_path": "action_result.summary",
+                    "data_path": "action_result.data.*.description",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.message",
+                    "data_path": "action_result.data.*.locations",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.first_detected",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.last_detected",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.insight_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.total_assets",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary.limit_applied",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully retrieved 1 insight asset(s)"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -2863,7 +2944,7 @@
             ],
             "render": {
                 "width": 12,
-                "title": "SOC Insight Assets",
+                "title": "IQ for TD Insight Assets",
                 "type": "table",
                 "height": 5
             },
@@ -3104,16 +3185,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3239,6 +3320,10 @@
                 {
                     "data_path": "action_result.data.*.results.*.rdata.address",
                     "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ipv6"
+                    ],
                     "example_values": [
                         "192.168.10.101"
                     ]
@@ -3272,16 +3357,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3411,16 +3496,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3615,16 +3700,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3860,16 +3945,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -3972,7 +4057,7 @@
                     "data_path": "action_result.parameter.tags",
                     "data_type": "string",
                     "example_values": [
-                        "{\"category\": \"security\", \"priority\": \"high\"}"
+                        "{\"category\": \"security\", \"severity\": \"high\"}"
                     ]
                 },
                 {
@@ -4082,16 +4167,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4312,16 +4397,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4530,16 +4615,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4648,16 +4733,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4886,16 +4971,16 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects_successful",
                     "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
                 }
             ],
             "render": {
@@ -4907,153 +4992,8 @@
             "versions": "EQ(*)"
         },
         {
-            "action": "get soc insights comments",
-            "identifier": "get_soc_insights_comments",
-            "description": "Retrieve the list of comments associated with a specific Insight ID from Infoblox, optionally filtered by a time range",
-            "type": "investigate",
-            "read_only": true,
-            "parameters": {
-                "insight_id": {
-                    "data_type": "string",
-                    "description": "ID of the insight to retrieve comments from",
-                    "order": 0,
-                    "primary": true,
-                    "required": true,
-                    "contains": [
-                        "infoblox insight id"
-                    ]
-                },
-                "from": {
-                    "description": "Filter by comments changed after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
-                    "data_type": "string",
-                    "order": 1
-                },
-                "to": {
-                    "description": "Filter by comments changed before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
-                    "data_type": "string",
-                    "order": 2
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failed"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.from",
-                    "data_type": "string",
-                    "example_values": [
-                        "2025-06-11T04:10:00.000"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.insight_id",
-                    "data_type": "string",
-                    "example_values": [
-                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
-                    ],
-                    "contains": [
-                        "infoblox insight id"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.to",
-                    "data_type": "string",
-                    "example_values": [
-                        "2025-06-11T04:10:00.000"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.comments.*.commentsChanger",
-                    "data_type": "string",
-                    "column_name": "Comments Changer",
-                    "column_order": 0,
-                    "example_values": [
-                        "dhruvil.bhatt@crestdatasys.com"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.comments.*.dateChanged",
-                    "data_type": "string",
-                    "column_name": "Date Changed",
-                    "column_order": 1,
-                    "example_values": [
-                        "2025-07-08T11:55:49.551"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.comments.*.newComment",
-                    "data_type": "string",
-                    "column_name": "New Comment",
-                    "column_order": 2,
-                    "example_values": [
-                        "ServiceNow incident: INC0010052"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.comments.*.status",
-                    "data_type": "string",
-                    "column_name": "Status",
-                    "column_order": 3,
-                    "example_values": [
-                        "Active"
-                    ]
-                },
-                {
-                    "data_path": "action_result.summary.from_filter",
-                    "data_type": "string",
-                    "example_values": [
-                        "Not specified"
-                    ]
-                },
-                {
-                    "data_path": "action_result.summary.insight_id",
-                    "data_type": "string",
-                    "example_values": [
-                        "d00070a8-6ce9-40dd-8e2e-b8b7c05b303f"
-                    ]
-                },
-                {
-                    "data_path": "action_result.summary.to_filter",
-                    "data_type": "string",
-                    "example_values": [
-                        "Not specified"
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                }
-            ],
-            "render": {
-                "type": "table",
-                "width": 12,
-                "height": 5,
-                "title": "SOC Insights Comments"
-            },
-            "versions": "EQ(*)"
-        },
-        {
-            "action": "get soc insights indicators",
-            "identifier": "get_soc_insights_indicators",
+            "action": "get iq for td insights indicators",
+            "identifier": "get_iq_for_td_insights_indicators",
             "description": "Retrieve a filtered list of indicators associated with a specific Insight ID from Infoblox, supporting multiple filter parameters",
             "type": "investigate",
             "read_only": true,
@@ -5068,41 +5008,39 @@
                         "infoblox insight id"
                     ]
                 },
-                "confidence": {
-                    "description": "Filter by confidence score",
+                "indicators": {
+                    "description": "Filter by comma-separated threat indicators (e.g. indicator1,indicator2)",
                     "data_type": "string",
                     "order": 1
                 },
-                "indicator": {
-                    "description": "Filter by specific indicator value",
+                "threat_level": {
+                    "description": "Filter indicators by threat level (numeric value indicating severity)",
                     "data_type": "string",
                     "order": 2
                 },
-                "actor": {
-                    "description": "Filter by threat actor",
+                "status": {
+                    "description": "Filter by comma-separated indicator blocking status (e.g. Blocked,Not Blocked)",
                     "data_type": "string",
                     "order": 3
                 },
-                "action": {
-                    "description": "Filter by action taken",
+                "users": {
+                    "description": "Filter indicators by comma-separated user names",
                     "data_type": "string",
+                    "contains": [
+                        "user name"
+                    ],
                     "order": 4
                 },
-                "from": {
-                    "description": "Filter by indicators seen after this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
+                "detected_at": {
+                    "description": "Return indicators detected on this RFC 3339 date (e.g. 2025-12-19T03:00:00Z); only records for that specific day are returned, not a range from this date to now",
                     "data_type": "string",
                     "order": 5
                 },
-                "to": {
-                    "description": "Filter by indicators seen before this time in this format: YYYY-MM-DDTHH:mm:ss.SSS",
-                    "data_type": "string",
-                    "order": 6
-                },
                 "limit": {
-                    "description": "Specify the maximum number of results to return (default: 100)",
+                    "description": "Specify the maximum number of results to return (default: 1000)",
                     "data_type": "numeric",
-                    "default": 100,
-                    "order": 7
+                    "default": 1000,
+                    "order": 6
                 }
             },
             "output": [
@@ -5115,133 +5053,135 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.action",
-                    "data_type": "string",
-                    "example_values": [
-                        "Not Blocked"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.actor",
-                    "data_type": "string",
-                    "example_values": [
-                        "spam_azure_aws"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.confidence",
-                    "data_type": "string",
-                    "example_values": [
-                        "3"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.from",
-                    "data_type": "string",
-                    "example_values": [
-                        "2025-06-11T04:10:00.000"
-                    ]
-                },
-                {
-                    "data_path": "action_result.parameter.indicator",
+                    "data_path": "action_result.parameter.indicators",
                     "data_type": "string",
                     "example_values": [
                         "ikhwanschoolday.us"
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.insight_id",
+                    "data_path": "action_result.parameter.threat_level",
                     "data_type": "string",
                     "example_values": [
-                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                        "3"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "Not Blocked"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.users",
+                    "data_type": "string",
+                    "contains": [
+                        "user name"
                     ],
+                    "example_values": [
+                        "john.doe"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.detected_at",
+                    "data_type": "string",
+                    "example_values": [
+                        "2025-12-19T03:00:00Z"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.insight_id",
+                    "data_type": "string",
                     "contains": [
                         "infoblox insight id"
+                    ],
+                    "example_values": [
+                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
                     ]
                 },
                 {
                     "data_path": "action_result.parameter.limit",
                     "data_type": "numeric",
                     "example_values": [
-                        100
+                        1000
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.to",
+                    "data_path": "action_result.data.*.indicators.*.status",
                     "data_type": "string",
-                    "example_values": [
-                        "2025-06-11T04:10:00.000"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.indicators.*.action",
-                    "data_type": "string",
-                    "column_name": "Action",
+                    "column_name": "Status",
                     "column_order": 0,
                     "example_values": [
                         "Not Blocked"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.indicators.*.actor",
-                    "data_type": "string",
-                    "column_name": "Actor",
-                    "column_order": 6,
-                    "example_values": [
-                        "spam_azure_aws"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.indicators.*.confidence",
-                    "data_type": "string",
-                    "column_name": "Confidence",
-                    "column_order": 1,
-                    "example_values": [
-                        "3"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.indicators.*.count",
-                    "data_type": "numeric",
-                    "column_name": "Count",
-                    "column_order": 2,
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.indicators.*.feedName",
-                    "data_type": "string",
-                    "column_name": "Feed Name",
-                    "column_order": 3,
-                    "example_values": [
-                        "AntiMalware"
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.indicators.*.indicator",
+                    "data_path": "action_result.data.*.indicators.*.threat_indicator",
                     "data_type": "string",
                     "column_name": "Indicator",
-                    "column_order": 5,
+                    "column_order": 1,
                     "example_values": [
                         "ikhwanschoolday.us"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.indicators.*.macAddress",
-                    "data_type": "string",
+                    "data_path": "action_result.data.*.indicators.*.threat_level",
+                    "data_type": "numeric",
+                    "column_name": "Threat Level",
+                    "column_order": 2,
                     "example_values": [
-                        "64:c2:b3:d9:41:3d"
+                        3
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.indicators.*.threatLevelMax",
+                    "data_path": "action_result.data.*.indicators.*.confidence_level",
+                    "data_type": "numeric",
+                    "column_name": "Confidence Level",
+                    "column_order": 3
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.total_events",
+                    "data_type": "numeric",
+                    "column_name": "Total Events",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.threat_actors",
                     "data_type": "string",
-                    "column_name": "Threat Level Max",
-                    "column_order": 4,
-                    "example_values": [
-                        "3"
+                    "column_name": "Threat Actors",
+                    "column_order": 5
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.verified_assets",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.unverified_assets",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.users",
+                    "data_type": "string",
+                    "contains": [
+                        "user name"
                     ]
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.detected_at",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.first_detected",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.indicators.*.last_detected",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.summary.insight_id",
@@ -5265,30 +5205,39 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully retrieved 1 insight indicator(s)"
+                    ]
+                },
+                {
                     "data_path": "summary.total_objects",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 }
             ],
             "render": {
                 "type": "table",
                 "width": 12,
                 "height": 5,
-                "title": "SOC Insights Indicators"
+                "title": "IQ for TD Insights Indicators"
             },
             "versions": "EQ(*)"
         },
         {
-            "action": "get soc insights events",
-            "identifier": "get_soc_insights_events",
-            "description": "Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox SOC Insights",
+            "action": "get iq for td insights events",
+            "identifier": "get_iq_for_td_insights_events",
+            "description": "Retrieve a detailed list of threat-related events for a specific Insight ID from Infoblox IQ for TD Insights",
             "type": "investigate",
             "read_only": true,
             "parameters": {
@@ -5296,37 +5245,11 @@
                     "description": "ID of the insight to retrieve events from",
                     "data_type": "string",
                     "required": true,
-                    "order": 0
-                },
-                "device_ip": {
-                    "description": "Filter assets by Device IP",
-                    "data_type": "string",
+                    "order": 0,
+                    "primary": true,
                     "contains": [
-                        "ip",
-                        "ipv6"
-                    ],
-                    "order": 1,
-                    "primary": true
-                },
-                "query": {
-                    "description": "Filter by query string",
-                    "data_type": "string",
-                    "order": 2
-                },
-                "query_type": {
-                    "description": "Filter events by DNS query type (e.g., TXT, A, MX)",
-                    "data_type": "string",
-                    "order": 3
-                },
-                "source": {
-                    "description": "Filter events by the threat intelligence source or feed (e.g., DFP (DFP))",
-                    "data_type": "string",
-                    "order": 4
-                },
-                "indicator": {
-                    "description": "Filter events by a specific threat indicator such as a domain, IP, or hash (e.g., hmdns.top)",
-                    "data_type": "string",
-                    "order": 5
+                        "infoblox insight id"
+                    ]
                 },
                 "threat_level": {
                     "description": "Filter by threat level",
@@ -5339,10 +5262,10 @@
                         "Info"
                     ],
                     "default": "All",
-                    "order": 6
+                    "order": 1
                 },
-                "confidence_level": {
-                    "description": "Filter by confidence level",
+                "threat_confidence": {
+                    "description": "Filter by threat confidence score",
                     "data_type": "string",
                     "value_list": [
                         "All",
@@ -5351,23 +5274,66 @@
                         "Low"
                     ],
                     "default": "All",
+                    "order": 2
+                },
+                "indicator": {
+                    "description": "Filter events by a specific threat indicator such as a domain, IP, or hash (e.g., hmdns.top)",
+                    "data_type": "string",
+                    "order": 3
+                },
+                "detected_from": {
+                    "description": "Filter events detected on or after this RFC 3339 timestamp (e.g. 2025-12-19T03:00:00Z)",
+                    "data_type": "string",
+                    "order": 4
+                },
+                "detected_to": {
+                    "description": "Filter events detected on or before this RFC 3339 timestamp (e.g. 2025-12-19T03:00:00Z)",
+                    "data_type": "string",
+                    "order": 5
+                },
+                "tclass": {
+                    "description": "Filter by threat class category (e.g., Malware, Phishing, C2, Data Exfiltration)",
+                    "data_type": "string",
+                    "order": 6
+                },
+                "query": {
+                    "description": "Filter by the DNS query name (the domain or hostname that was queried)",
+                    "data_type": "string",
                     "order": 7
                 },
-                "limit": {
-                    "description": "Specify the maximum number of results to return",
-                    "data_type": "numeric",
-                    "default": 100,
-                    "order": 8
+                "device_ip": {
+                    "description": "Filter events by comma-separated device IP addresses",
+                    "data_type": "string",
+                    "contains": [
+                        "ip",
+                        "ipv6"
+                    ],
+                    "order": 8,
+                    "primary": true
                 },
-                "from": {
-                    "description": "Filter by events detected after this time in format YYYY-MM-DDTHH:mm:ss.SSS",
+                "device_name": {
+                    "description": "Filter by the name of the device that generated the event",
                     "data_type": "string",
                     "order": 9
                 },
-                "to": {
-                    "description": "Filter by events detected before this time in format YYYY-MM-DDTHH:mm:ss.SSS",
+                "user": {
+                    "description": "Filter events by comma-separated user names",
                     "data_type": "string",
+                    "contains": [
+                        "user name"
+                    ],
                     "order": 10
+                },
+                "source": {
+                    "description": "Filter events by the network source identifier where the DNS query originated",
+                    "data_type": "string",
+                    "order": 11
+                },
+                "limit": {
+                    "description": "Specify the maximum number of results to return (default: 5000, max: 5000)",
+                    "data_type": "numeric",
+                    "default": 5000,
+                    "order": 12
                 }
             },
             "output": [
@@ -5380,7 +5346,7 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.confidence_level",
+                    "data_path": "action_result.parameter.threat_confidence",
                     "data_type": "string",
                     "example_values": [
                         "High"
@@ -5398,10 +5364,24 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.from",
+                    "data_path": "action_result.parameter.device_name",
                     "data_type": "string",
                     "example_values": [
-                        "2025-07-09T12:48:48.000"
+                        "DESKTOP-1234"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.detected_from",
+                    "data_type": "string",
+                    "example_values": [
+                        "2025-12-19T03:00:00Z"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.detected_to",
+                    "data_type": "string",
+                    "example_values": [
+                        "2025-12-19T03:00:00Z"
                     ]
                 },
                 {
@@ -5414,6 +5394,9 @@
                 {
                     "data_path": "action_result.parameter.insight_id",
                     "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ],
                     "example_values": [
                         "ea970c56-9d69-4844-8dc2-77d9be724c43"
                     ]
@@ -5422,7 +5405,7 @@
                     "data_path": "action_result.parameter.limit",
                     "data_type": "numeric",
                     "example_values": [
-                        100
+                        5000
                     ]
                 },
                 {
@@ -5433,10 +5416,20 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.query_type",
+                    "data_path": "action_result.parameter.tclass",
                     "data_type": "string",
                     "example_values": [
-                        "TXT"
+                        "EmergentDomain"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.user",
+                    "data_type": "string",
+                    "contains": [
+                        "user name"
+                    ],
+                    "example_values": [
+                        "john.doe"
                     ]
                 },
                 {
@@ -5454,13 +5447,6 @@
                     ]
                 },
                 {
-                    "data_path": "action_result.parameter.to",
-                    "data_type": "string",
-                    "example_values": [
-                        "2025-07-09T12:48:48.000"
-                    ]
-                },
-                {
                     "data_path": "action_result.data.*.events.*.action",
                     "data_type": "string",
                     "example_values": [
@@ -5470,16 +5456,16 @@
                     "column_order": 3
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.confidenceLevel",
+                    "data_path": "action_result.data.*.events.*.threat_confidence",
                     "data_type": "string",
                     "example_values": [
                         "High"
                     ],
-                    "column_name": "Confidence Level",
+                    "column_name": "Threat Confidence",
                     "column_order": 0
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.deviceCountry",
+                    "data_path": "action_result.data.*.events.*.device_country",
                     "data_type": "string",
                     "example_values": [
                         "United States"
@@ -5488,7 +5474,7 @@
                     "column_order": 7
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.deviceIp",
+                    "data_path": "action_result.data.*.events.*.device_ip",
                     "data_type": "string",
                     "contains": [
                         "ip",
@@ -5501,7 +5487,7 @@
                     "column_order": 2
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.deviceName",
+                    "data_path": "action_result.data.*.events.*.device_name",
                     "data_type": "string",
                     "example_values": [
                         "87.121.84.128"
@@ -5510,14 +5496,17 @@
                     "column_order": 1
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.macAddress",
+                    "data_path": "action_result.data.*.events.*.mac_address",
                     "data_type": "string",
+                    "contains": [
+                        "mac address"
+                    ],
                     "example_values": [
                         "64:c2:b3:d9:41:3d"
                     ]
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.osVersion",
+                    "data_path": "action_result.data.*.events.*.os_version",
                     "data_type": "string",
                     "example_values": [
                         "Chrome OS"
@@ -5533,7 +5522,7 @@
                     "column_order": 4
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.threatFamily",
+                    "data_path": "action_result.data.*.events.*.tfamily",
                     "data_type": "string",
                     "example_values": [
                         "EmergentDomain"
@@ -5542,7 +5531,15 @@
                     "column_order": 5
                 },
                 {
-                    "data_path": "action_result.data.*.events.*.threatLevel",
+                    "data_path": "action_result.data.*.events.*.tproperty",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.tclass",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.threat_level",
                     "data_type": "string",
                     "example_values": [
                         "High"
@@ -5551,27 +5548,744 @@
                     "column_order": 6
                 },
                 {
-                    "data_path": "action_result.summary",
+                    "data_path": "action_result.data.*.events.*.detected_at",
                     "data_type": "string"
                 },
                 {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric"
+                    "data_path": "action_result.data.*.events.*.query",
+                    "data_type": "string"
                 },
                 {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric"
+                    "data_path": "action_result.data.*.events.*.query_type",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.user",
+                    "data_type": "string",
+                    "contains": [
+                        "user name"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.actor_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.source",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.indicator",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.response",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.dns_view",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.feed",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.dhcp_fingerprint",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.response_region",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.response_country",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.events.*.device_region",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.insight_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "292GTP9s"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.total_events",
+                    "data_type": "numeric",
+                    "example_values": [
+                        48
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.limit_applied",
+                    "data_type": "numeric",
+                    "example_values": [
+                        100
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully retrieved 48 insight event(s)"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
                 }
             ],
             "render": {
                 "width": 12,
                 "type": "table",
                 "height": 5,
-                "title": "SOC Insights Events"
+                "title": "IQ for TD Insights Events"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "get iq for td insight details",
+            "identifier": "get_iq_for_td_insight_details",
+            "description": "Retrieve the full detail view for a single IQ for TD Insight, including counts, severity, top indicators/assets, threat actors, and recommendations",
+            "type": "investigate",
+            "read_only": true,
+            "parameters": {
+                "insight_id": {
+                    "data_type": "string",
+                    "description": "ID of the insight to retrieve details for",
+                    "order": 0,
+                    "primary": true,
+                    "required": true,
+                    "contains": [
+                        "infoblox insight id"
+                    ]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.insight_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ],
+                    "example_values": [
+                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.insight_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ],
+                    "column_name": "Insight ID",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.name",
+                    "data_type": "string",
+                    "column_name": "Name",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.data.*.description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.severity",
+                    "data_type": "string",
+                    "example_values": [
+                        "Critical",
+                        "High",
+                        "Medium",
+                        "Low"
+                    ],
+                    "column_name": "Severity",
+                    "column_order": 2
+                },
+                {
+                    "data_path": "action_result.data.*.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 3
+                },
+                {
+                    "data_path": "action_result.data.*.date_created",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.evaluation_start_date",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.evaluation_end_date",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.total_events",
+                    "data_type": "numeric",
+                    "column_name": "Total Events",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.data.*.total_indicators",
+                    "data_type": "numeric",
+                    "column_name": "Total Indicators",
+                    "column_order": 5
+                },
+                {
+                    "data_path": "action_result.data.*.total_users",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.total_assets",
+                    "data_type": "numeric",
+                    "column_name": "Total Assets",
+                    "column_order": 6
+                },
+                {
+                    "data_path": "action_result.data.*.total_verified_assets",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.total_unverified_assets",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.expiring_in_days",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.threat_properties",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.time_saved_seconds",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.top_indicators.*.indicator",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.top_indicators.*.description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.top_indicators.*.threat_actors.*.id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.top_indicators.*.threat_actors.*.name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.top_assets.*.asset",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.top_assets.*.description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.threat_actors.*.actor_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.threat_actors.*.actor_description",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.overview",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.key_recommendations.*.id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox recommendation id"
+                    ],
+                    "example_values": [
+                        "b1c2d3e4-f5a6-7890-abcd-ef1234567890"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.key_recommendations.*.recommendation",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.key_recommendations.*.type",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.key_recommendations.*.action_taken",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.insight_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.severity",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.total_events",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary.total_indicators",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary.total_assets",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.summary.total_users",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully retrieved details for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "width": 12,
+                "type": "custom",
+                "view": "infoblox_views.display_get_iq_for_td_insight_details",
+                "height": 10,
+                "title": "Insight Details"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "update iq for td insight status",
+            "identifier": "update_iq_for_td_insight_status",
+            "description": "Update the workflow status of a specific IQ for TD Insight, optionally recording an analyst comment describing the change",
+            "type": "generic",
+            "read_only": false,
+            "parameters": {
+                "insight_id": {
+                    "data_type": "string",
+                    "description": "ID of the insight whose status should be updated",
+                    "order": 0,
+                    "primary": true,
+                    "required": true,
+                    "contains": [
+                        "infoblox insight id"
+                    ]
+                },
+                "status": {
+                    "data_type": "string",
+                    "description": "New workflow status to assign to the insight",
+                    "order": 1,
+                    "required": true,
+                    "value_list": [
+                        "Needs Review",
+                        "In Progress",
+                        "Resolved",
+                        "Reopened",
+                        "Accepted Risk",
+                        "False Positive"
+                    ]
+                },
+                "comment": {
+                    "data_type": "string",
+                    "description": "Optional analyst comment explaining the status change",
+                    "order": 2
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.insight_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ],
+                    "example_values": [
+                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "Resolved"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.comment",
+                    "data_type": "string",
+                    "example_values": [
+                        "False positive - verified with user"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.insight_id",
+                    "data_type": "string",
+                    "column_name": "Insight ID",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.summary.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully updated status to 'Resolved' for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "width": 12,
+                "type": "table",
+                "height": 5,
+                "title": "Update IQ for TD Insight Status"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "execute iq for td recommendation actions",
+            "identifier": "execute_iq_for_td_recommendation_actions",
+            "description": "Execute a single recommendation action on an IQ for TD Insight, referencing the recommendation by the ID returned in the 'get iq for td insight details' action",
+            "type": "contain",
+            "read_only": false,
+            "parameters": {
+                "insight_id": {
+                    "data_type": "string",
+                    "description": "Single ID of the insight whose recommendation is being actioned; comma-separated multiple values are not supported",
+                    "order": 0,
+                    "primary": true,
+                    "required": true,
+                    "contains": [
+                        "infoblox insight id"
+                    ]
+                },
+                "recommendation_id": {
+                    "data_type": "string",
+                    "description": "Single ID of the recommendation to execute (from the 'key_recommendations' output of 'get iq for td insight details'); comma-separated multiple values are not supported",
+                    "order": 1,
+                    "primary": true,
+                    "required": true,
+                    "contains": [
+                        "infoblox recommendation id"
+                    ]
+                },
+                "action": {
+                    "data_type": "string",
+                    "description": "Optional override of the action verb applied to the recommendation (e.g. block, mark_risky, update_policy); when empty, the server picks the canonical verb for the recommendation type",
+                    "order": 2
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.insight_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox insight id"
+                    ],
+                    "example_values": [
+                        "ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.recommendation_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox recommendation id"
+                    ],
+                    "example_values": [
+                        "b1c2d3e4-f5a6-7890-abcd-ef1234567890"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.action",
+                    "data_type": "string",
+                    "example_values": [
+                        "block"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.results.*.action",
+                    "data_type": "string",
+                    "example_values": [
+                        "block",
+                        "mark_risky",
+                        "update_policy"
+                    ],
+                    "column_name": "Action",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.results.*.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "succeeded",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.data.*.results.*.audit_entry_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox audit entry id"
+                    ],
+                    "example_values": [
+                        "3f8a1b2c-4d5e-6789-abcd-ef0123456789"
+                    ],
+                    "column_name": "Audit Entry ID",
+                    "column_order": 2
+                },
+                {
+                    "data_path": "action_result.data.*.results.*.reason",
+                    "data_type": "string",
+                    "example_values": [
+                        "applied",
+                        "already_applied",
+                        "action_failed",
+                        "resource_not_found",
+                        "invalid_request",
+                        "not_eligible"
+                    ],
+                    "column_name": "Reason",
+                    "column_order": 3
+                },
+                {
+                    "data_path": "action_result.data.*.results.*.message",
+                    "data_type": "string",
+                    "column_name": "Message",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.summary.insight_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.recommendation_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox recommendation id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "succeeded",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully executed recommendation action for insight ID: ea970c56-9d69-4844-8dc2-77d9be724c43"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "width": 12,
+                "type": "table",
+                "height": 5,
+                "title": "Execute IQ for TD Recommendation Actions"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "undo iq for td recommendation action",
+            "identifier": "undo_iq_for_td_recommendation_action",
+            "description": "Reverse a previously executed recommendation action using the audit entry ID returned by the 'execute iq for td recommendation actions' action",
+            "type": "correct",
+            "read_only": false,
+            "parameters": {
+                "audit_entry_id": {
+                    "data_type": "string",
+                    "description": "Single audit log entry ID to undo (from the 'execute iq for td recommendation actions' output); comma-separated multiple values are not supported",
+                    "order": 0,
+                    "primary": true,
+                    "required": true,
+                    "contains": [
+                        "infoblox audit entry id"
+                    ]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.audit_entry_id",
+                    "data_type": "string",
+                    "contains": [
+                        "infoblox audit entry id"
+                    ],
+                    "example_values": [
+                        "3f8a1b2c-4d5e-6789-abcd-ef0123456789"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.result.action",
+                    "data_type": "string",
+                    "example_values": [
+                        "allow",
+                        "undo_risky",
+                        "revert_policy"
+                    ],
+                    "column_name": "Undo Action",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "succeeded",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.summary.audit_entry_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.action",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully performed undo action 'allow' for audit entry ID: 3f8a1b2c-4d5e-6789-abcd-ef0123456789"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "width": 12,
+                "type": "table",
+                "height": 5,
+                "title": "Undo IQ for TD Recommendation Action"
             },
             "versions": "EQ(*)"
         }
