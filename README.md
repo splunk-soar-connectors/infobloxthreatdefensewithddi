@@ -1,7 +1,7 @@
 # Infoblox Threat Defense with DDI
 
 Publisher: Infoblox <br>
-Connector Version: 1.0.0 <br>
+Connector Version: 1.0.1 <br>
 Product Vendor: Infoblox <br>
 Product Name: Infoblox Threat Defense with DDI <br>
 Minimum Product Version: 6.4.1
