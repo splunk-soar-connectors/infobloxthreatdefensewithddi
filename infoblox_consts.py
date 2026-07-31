@@ -1,6 +1,6 @@
 # File: infoblox_consts.py
 #
-# Copyright 2025 Infoblox Inc.
+# Copyright 2025-2026 Infoblox Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -147,4 +147,4 @@ MAX_LIMIT = 1000
 VALID_ADDRESS_STATES = ["Free", "Used", "Any"]
 
 # Severity mapping for DNS Security Events
-SEVERITY_MAPPING = {"LOW": "low", "INFO": "low", "MEDIUM": "medium", "HIGH": "high"}
+SEVERITY_MAPPING = {"LOW": "low", "INFO": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "high"}

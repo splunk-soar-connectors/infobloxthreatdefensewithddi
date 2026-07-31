@@ -7,10 +7,10 @@
     "logo": "logo_infoblox.svg",
     "logo_dark": "logo_infoblox_dark.svg",
     "product_name": "Infoblox Threat Defense with DDI",
-    "python_version": "3",
+    "python_version": "3.9, 3.13",
     "product_version_regex": ".*",
     "publisher": "Infoblox",
-    "license": "Copyright 2025 Infoblox Inc.",
+    "license": "Copyright 2025-2026 Infoblox Inc.",
     "app_version": "1.0.0",
     "utctime_updated": "2025-09-05T19:02:27.446150Z",
     "package_name": "phantom_infoblox",
@@ -5575,5 +5575,11 @@
             },
             "versions": "EQ(*)"
         }
-    ]
+    ],
+    "pip39_dependencies": {
+        "wheel": []
+    },
+    "pip313_dependencies": {
+        "wheel": []
+    }
 }

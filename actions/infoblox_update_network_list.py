@@ -1,6 +1,6 @@
 # File: infoblox_update_network_list.py
 #
-# Copyright 2025 Infoblox Inc.
+# Copyright 2025-2026 Infoblox Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,17 @@ class UpdateNetworkList(BaseAction):
         Returns:
             int: phantom.APP_SUCCESS if validation passes, phantom.APP_ERROR otherwise
         """
+        ret_val, network_list_id = self._connector.validator.validate_integer(
+            self._action_result,
+            self._param.get("network_list_id"),
+            "network_list_id",
+            allow_zero=False,
+            allow_negative=False,
+        )
+        if phantom.is_fail(ret_val):
+            return ret_val
+        self._param["network_list_id"] = network_list_id
+
         # If items parameter is provided, split and clean the list
         if self._param.get("items"):
             items_param = self._param["items"]

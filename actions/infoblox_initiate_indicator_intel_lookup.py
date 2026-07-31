@@ -1,6 +1,6 @@
 # File: infoblox_initiate_indicator_intel_lookup.py
 #
-# Copyright 2025 Infoblox Inc.
+# Copyright 2025-2026 Infoblox Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@ import phantom.app as phantom
 
 import infoblox_consts as consts
 from actions import BaseAction
+
+
+ALLOWED_INDICATOR_TYPES = {"host", "ip", "url", "email", "hash"}
 
 
 class InitiateIndicatorIntelLookup(BaseAction):
@@ -38,7 +41,13 @@ class InitiateIndicatorIntelLookup(BaseAction):
             int: phantom.APP_SUCCESS on success, phantom.APP_ERROR on failure
         """
         # Validate indicator_value based on indicator_type
-        indicator_type = self._param.get("indicator_type").lower()
+        indicator_type = self._param.get("indicator_type", "").strip().lower()
+        if indicator_type not in ALLOWED_INDICATOR_TYPES:
+            return self._action_result.set_status(
+                phantom.APP_ERROR,
+                "'indicator_type' must be one of: email, hash, host, ip, url",
+            )
+        self._param["indicator_type"] = indicator_type
         indicator_value = self._param.get("indicator_value")
 
         # Use the generic indicator validator

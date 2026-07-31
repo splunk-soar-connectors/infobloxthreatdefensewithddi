@@ -1,6 +1,6 @@
 # File: infoblox_on_poll.py
 #
-# Copyright 2025 Infoblox Inc.
+# Copyright 2025-2026 Infoblox Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -166,6 +166,12 @@ class OnPoll(BaseAction):
             self._connector.save_progress("Failed to fetch DNS security events")
             return ret_val, None
 
+        events = response.get("result", []) if isinstance(response, dict) else []
+        if len(events) >= self._limit:
+            self._connector.save_progress(
+                f"Warning: DNS security event response reached the configured limit of {self._limit}; additional events may remain"
+            )
+
         # Process the response and create containers/artifacts
         ret_val = self._process_dns_security_events(response)
         if phantom.is_fail(ret_val):
@@ -293,18 +299,23 @@ class OnPoll(BaseAction):
         # Sort events by event_time to ensure proper checkpointing
         events.sort(key=lambda x: x.get("event_time", ""))
 
-        # Process each event and create a container with artifacts
+        failed_events = 0
+
+        # Process each event and stop at the first failure so the checkpoint
+        # remains immediately before the event that must be retried.
         for event in events:
             try:
                 # Create a container for this event
                 container_id = self._create_container_for_event(event)
                 if not container_id:
-                    continue
+                    failed_events += 1
+                    break
 
                 # Create an artifact for this event
                 artifact_id = self._create_artifact_for_event(event, container_id)
                 if not artifact_id:
-                    continue
+                    failed_events += 1
+                    break
 
                 # Update the last event time for checkpointing
                 event_time_str = event.get("event_time", "")
@@ -321,10 +332,18 @@ class OnPoll(BaseAction):
                             self._connector.save_state(self._state)
                     except Exception as e:
                         self._connector.debug_print(f"Error parsing event time: {e!s}")
+                        failed_events += 1
+                        break
 
             except Exception as e:
                 self._connector.debug_print(f"Error processing event: {e!s}")
-                continue
+                failed_events += 1
+                break
+
+        if failed_events:
+            message = "Failed to ingest a DNS security event; checkpoint preserved for retry"
+            self._connector.save_progress(message)
+            return self._action_result.set_status(phantom.APP_ERROR, message)
 
         self._connector.save_progress("Completed processing DNS security events")
         return phantom.APP_SUCCESS
@@ -348,7 +367,7 @@ class OnPoll(BaseAction):
         container_name = f"{tclass} - {qname}" if tclass and qname else "Infoblox DNS Security Event"
 
         # Map severity to container severity using the constant from infoblox_consts
-        container_severity = consts.SEVERITY_MAPPING.get(severity, "medium")
+        container_severity = consts.SEVERITY_MAPPING.get(severity, "high")
 
         event_time = event.get("event_time", "Unknown Time")
         qname = event.get("qname", "Unknown Domain")
@@ -357,8 +376,7 @@ class OnPoll(BaseAction):
         container_name = f"Infoblox DNS Security Event - {qname} - {event_time}"
 
         # Map severity to container severity
-        severity_mapping = {"LOW": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "high"}
-        container_severity = severity_mapping.get(threat_level, "medium")
+        container_severity = consts.SEVERITY_MAPPING.get(threat_level, "high")
 
         # Generate a unique source data identifier
         source_data_id = f"{qname}_{event.get('device', '')}_{event.get('event_time', '')}"
@@ -473,7 +491,7 @@ class OnPoll(BaseAction):
             "source_data_identifier": source_data_id,
             "cef": cef_data,
             "cef_types": artifact_cef_types,
-            "severity": consts.SEVERITY_MAPPING.get(event.get("severity", ""), "medium"),
+            "severity": consts.SEVERITY_MAPPING.get(event.get("severity", ""), "high"),
             "data": event,
             "run_automation": True,
             "type": artifact_type,
@@ -679,7 +697,7 @@ class OnPoll(BaseAction):
         Returns:
             str: Phantom severity level
         """
-        return consts.PHANTOM_SEVERITY_MAP.get(priority_text.upper())
+        return consts.PHANTOM_SEVERITY_MAP.get(priority_text.upper(), "high")
 
     def _create_artifact_for_insight(self, insight, container_id):
         """Create an artifact for a SOC Insight.
