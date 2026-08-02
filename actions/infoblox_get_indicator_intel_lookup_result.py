@@ -28,7 +28,9 @@ class GetIndicatorIntelLookupResult(BaseAction):
         """Log the start of the action execution."""
         self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get Indicator Intel Lookup Result"))
 
-    # No custom parameter validation needed as we rely on SOAR's built-in JSON schema validation
+    def _validate_params(self):
+        """Reject identifiers that would remain path-special after URL quoting."""
+        return self._connector.validator.validate_path_identifier(self._action_result, self._param.get("job_id"), "job_id")
 
     def __make_api_call(self):
         """
@@ -106,6 +108,10 @@ class GetIndicatorIntelLookupResult(BaseAction):
         """
         # Log action start
         self.__log_action_start()
+
+        ret_val = self._validate_params()
+        if phantom.is_fail(ret_val):
+            return ret_val
 
         # Make API call
         ret_val, response = self.__make_api_call()

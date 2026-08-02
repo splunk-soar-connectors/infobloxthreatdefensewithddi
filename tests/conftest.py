@@ -12,8 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import importlib.util
 import sys
+import types
 from pathlib import Path
 
+
+if importlib.util.find_spec("phantom") is None:
+    phantom_package = types.ModuleType("phantom")
+    phantom_app = types.ModuleType("phantom.app")
+    phantom_app.APP_SUCCESS = 0
+    phantom_app.APP_ERROR = 1
+    phantom_package.app = phantom_app
+    sys.modules["phantom"] = phantom_package
+    sys.modules["phantom.app"] = phantom_app
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

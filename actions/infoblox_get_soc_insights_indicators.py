@@ -42,6 +42,10 @@ class GetSocInsightsIndicators(BaseAction):
         Returns:
             int: phantom.APP_SUCCESS if validation passes, phantom.APP_ERROR otherwise
         """
+        ret_val = self._connector.validator.validate_path_identifier(self._action_result, self._param.get("insight_id"), "insight_id")
+        if phantom.is_fail(ret_val):
+            return ret_val
+
         # Validate from parameter if provided
         from_time = self._param.get("from")
         if from_time:

@@ -418,6 +418,16 @@ class InfobloxUtils:
 class Validator:
     """This class contains validation utility methods."""
 
+    def validate_path_identifier(self, action_result, parameter, key):
+        """Reject identifiers that retain special meaning as URL path segments."""
+        if str(parameter).strip() in {".", ".."}:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Invalid {key}: dot-only path identifiers are not allowed",
+            )
+
+        return phantom.APP_SUCCESS
+
     def validate_indicator_value(self, action_result, indicator_type, indicator_value):
         """
         Validate an indicator value based on its type.
