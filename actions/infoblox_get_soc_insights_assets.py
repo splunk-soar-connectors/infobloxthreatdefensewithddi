@@ -37,6 +37,10 @@ class GetSOCInsightsAssets(BaseAction):
         """
         self._connector.debug_print("Validating parameters for get SOC insights assets action")
 
+        ret_val = self._connector.validator.validate_path_identifier(self._action_result, self._param.get("insight_id"), "insight_id")
+        if phantom.is_fail(ret_val):
+            return ret_val
+
         # Validate asset_ip if provided - use the utility method from InfobloxUtils
         asset_ip = self._param.get("asset_ip")
         if asset_ip:

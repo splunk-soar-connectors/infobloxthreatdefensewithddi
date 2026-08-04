@@ -13,12 +13,13 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import phantom.app as phantom
 
 import infoblox_consts as consts
 from actions import BaseAction
+from infoblox_polling import next_poll_start, parse_event_timestamp
 
 
 class OnPoll(BaseAction):
@@ -221,8 +222,10 @@ class OnPoll(BaseAction):
 
                 t0 = current_time - (max_hours * 3600)
             else:
-                # Use the last event time plus 1 second to avoid duplicates
-                t0 = last_event_time + 1
+                # Re-fetch the last successful second. Container and artifact source
+                # identifiers deduplicate already-saved events, while this inclusive
+                # cursor preserves failed events later in the same second.
+                t0 = next_poll_start(last_event_time)
 
             t1 = current_time
 
@@ -321,9 +324,7 @@ class OnPoll(BaseAction):
                 event_time_str = event.get("event_time", "")
                 if event_time_str:
                     try:
-                        event_time = datetime.strptime(event_time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-                        event_time_utc = event_time.replace(tzinfo=timezone.utc)
-                        event_timestamp = int(event_time_utc.timestamp())
+                        event_timestamp = parse_event_timestamp(event_time_str)
 
                         # Update state with the latest timestamp
                         if not self._is_poll_now:
