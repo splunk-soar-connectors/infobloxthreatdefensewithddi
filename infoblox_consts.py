@@ -31,6 +31,8 @@ EMPTY_RESPONSE_STATUS_CODES = [200, 204]
 ERROR_INVALID_SELECTION = "Invalid '{0}' selected. Must be one of: {1}."
 ERROR_GENERAL_MESSAGE = "Status code: {0}, Data from server: {1}"
 ERROR_HTML_RESPONSE = "Error parsing html response"
+ERROR_AUTHORIZATION_FAILED = "Authorization failed. Please verify the API key configured for the asset is valid."
+ERROR_ACCESS_FORBIDDEN = "Access forbidden. Please verify the API key configured for the asset has the required permissions."
 ERROR_ZERO_INT_PARAM = "Please provide a non-zero positive integer value in the '{key}' parameter"
 ERROR_NEG_INT_PARAM = "Please provide a positive integer value in the '{key}' parameter"
 ERROR_INVALID_JSON_PARAM = "Please provide a valid JSON value for the '{key}' parameter"
@@ -40,8 +42,12 @@ ERROR_MISSING_REQUIRED_PARAM = "'{key}' is required parameter"
 ERROR_INVALID_INT_RANGE = "Please provide a valid integer value in the '{key}' parameter between {min_value} and {max_value}"
 ERROR_INSIGHT_NOT_FOUND = "Insight ID does not exist."
 ERROR_INVALID_DATETIME_FORMAT = "Please provide datetime in the format 'YYYY-MM-DDTHH:mm:ss.SSS' for the '{key}' parameter"
+ERROR_INVALID_RFC3339_DATETIME_FORMAT = "Please provide datetime in RFC 3339 format (e.g., '2025-12-19T03:00:00Z') for the '{key}' parameter"
 ERROR_NAMED_LIST_NOT_FOUND = "Custom List does not exist"
 ERROR_NAME_WITHOUT_TYPE = "When querying by name, both 'name' and 'type' parameters must be provided"
+ERROR_MULTIPLE_VALUES_NOT_SUPPORTED = (
+    "This action supports a single value only for the '{key}' parameter; comma-separated or multiple values are not supported"
+)
 
 ACTION_EMPTY_RESPONSE = "Empty response from server"
 ACTION_CREATE_NETWORK_LIST_INVALID_RESPONSE = "Network list creation failed: unexpected response format. Response: {response}"
@@ -66,15 +72,27 @@ INDICATOR_INTEL_LOOKUP_JOBS_ENDPOINT = "/tide/api/services/intel/lookup/jobs"
 NAMED_LIST_ENDPOINT = "/api/atcfw/v1/named_lists"
 TIDE_THREAT_ENDPOINT = "/tide/api/data/threats"
 DNS_RECORD_ENDPOINT = "/api/ddi/v1/dns/record"
-SOC_INSIGHTS_ENDPOINT = "/api/v1/insights"
+IQ_FOR_TD_INSIGHTS_ENDPOINT = "/api/v2/insights"
 INDICATOR_INTEL_LOOKUP_ENDPOINT = "/tide/api/services/intel/lookup/indicator"
-SOC_INSIGHTS_COMMENTS_ENDPOINT = "/api/v1/insights/{}/comments"
 DNS_SECURITY_EVENTS_ENDPOINT = "/api/dnsdata/v2/dns_event"
-SOC_INSIGHTS_EVENTS_ENDPOINT = "/api/v1/insights/{}/events"
+IQ_FOR_TD_INSIGHTS_EVENTS_ENDPOINT = "/api/v2/insights/{}/events"
 IPAM_HOST_ENDPOINT = "/api/ddi/v1/ipam/host"
 DHCP_LEASE_ENDPOINT = "/api/ddi/v1/dhcp/lease"
 SECURITY_POLICY_ENDPOINT = "/api/atcfw/v1/security_policies"
-SOC_INSIGHTS_INDICATORS_ENDPOINT = "/api/v1/insights/{}/indicators"
+IQ_FOR_TD_INSIGHTS_INDICATORS_ENDPOINT = "/api/v2/insights/{}/indicators"
+IQ_FOR_TD_INSIGHTS_ASSETS_ENDPOINT = "/api/v2/insights/{}/assets"
+IQ_FOR_TD_INSIGHT_DETAILS_ENDPOINT = "/api/v2/insights/{}"
+IQ_FOR_TD_INSIGHT_STATUS_ENDPOINT = "/api/v2/insights/status"
+IQ_FOR_TD_INSIGHT_EXECUTE_ACTIONS_ENDPOINT = "/api/v2/insights/{}/actions"
+IQ_FOR_TD_INSIGHT_UNDO_ACTION_ENDPOINT = "/api/v2/insights/global-activity/{}/undo"
+ACCOUNT_ENDPOINT = "/api/atcfw/v1/account"
+
+# Client/customer identification headers (usage tracking across integrations)
+INFOBLOX_CLIENT_HEADER_NAME = "x-Infoblox-client"
+INFOBLOX_CLIENT_HEADER_VALUE = "Splunk-SOAR-ThreatDefense"
+INFOBLOX_CUSTOMER_HEADER_NAME = "x-Infoblox-customer"
+STATE_KEY_CUSTOMER_ID = "customer_id"
+STATE_KEY_CUSTOMER_ID_API_KEY_ENC = "customer_id_api_key_enc"
 
 # success messages
 ACTION_TEST_CONNECTIVITY_SUCCESS_RESPONSE = "Successfully connected to Infoblox"
@@ -92,15 +110,19 @@ ACTION_INDICATOR_INTEL_LOOKUP_RESULT_SUCCESS_RESPONSE = "Successfully retrieved 
 ACTION_INDICATOR_THREAT_LOOKUP_SUCCESS_RESPONSE = "Successfully retrieved {count} threat intelligence records"
 ACTION_HOST_ASSET_DATA_LOOKUP_SUCCESS_RESPONSE = "Successfully retrieved {count} host asset records"
 ACTION_DNS_RECORD_LOOKUP_SUCCESS_RESPONSE = "Successfully retrieved {count} DNS records"
-ACTION_GET_SOC_INSIGHTS_COMMENTS_SUCCESS_RESPONSE = "Successfully retrieved {count} comments for the insight"
 SUCCESS_GET_INSIGHTS_ASSETS_MULTIPLE = "Successfully retrieved {0} insight asset(s)"
 SUCCESS_GET_INSIGHTS_ASSETS_SINGLE = "Successfully retrieved insight asset"
 SUCCESS_GET_INSIGHTS_EVENTS = "Successfully retrieved {0} insight event(s)"
 ACTION_INDICATOR_INTEL_LOOKUP_SUCCESS_INITIATED = "Successfully initiated indicator intel lookup with job ID: {job_id}, status: {status}"
 ACTION_INDICATOR_INTEL_LOOKUP_SUCCESS_WITH_RESULTS = "Successfully retrieved {count} results for job ID: {job_id}"
-SUCCESS_GET_INSIGHTS_COMMENTS = "Successfully retrieved insights comments"
 
 ACTION_GET_INSIGHTS_INDICATORS_SUCCESS_RESPONSE = "Successfully retrieved {0} insight indicator(s)"
+ACTION_GET_INSIGHT_DETAILS_SUCCESS_RESPONSE = "Successfully retrieved details for insight ID: {insight_id}"
+ACTION_UPDATE_INSIGHT_STATUS_SUCCESS_RESPONSE = "Successfully updated status to '{status}' for insight ID: {insight_id}"
+ACTION_EXECUTE_RECOMMENDATION_ACTIONS_SUCCESS_SINGLE = "Successfully executed recommendation action for insight ID: {insight_id}"
+ACTION_EXECUTE_RECOMMENDATION_ACTIONS_FAILED_SINGLE = "Recommendation action failed for insight ID: {insight_id}. Details: {details}"
+ACTION_UNDO_RECOMMENDATION_ACTION_SUCCESS_RESPONSE = "Successfully performed undo action '{action}' for audit entry ID: {audit_entry_id}"
+ACTION_UNDO_RECOMMENDATION_ACTION_FAILED = "Failed to undo recommendation action for audit entry ID: {audit_entry_id}"
 ACTION_DHCP_LEASE_LOOKUP_SUCCESS_RESPONSE = "Successfully retrieved {count} DHCP lease data"
 ACTION_CREATE_NAMED_LIST_SUCCESS_RESPONSE = "Successfully created custom list"
 ACTION_UPDATE_NAMED_LIST_SUCCESS_RESPONSE = "Successfully updated custom list"
@@ -111,13 +133,13 @@ ACTION_UPDATE_SECURITY_POLICY_SUCCESS_RESPONSE = "Successfully updated security 
 ACTION_UPDATE_NAMED_LIST_ITEMS_SUCCESS_RESPONSE = "Successfully {0} {1} items to/from custom list with ID: {2}"
 ACTION_DNS_SECURITY_EVENTS_SUCCESS = "Successfully retrieved {count} DNS security events"
 
-ACTION_SOC_INSIGHTS_SUCCESS = "Successfully retrieved {count} SOC insights for polling"
-ACTION_SOC_INSIGHTS_CONTAINERS_CREATED = "Successfully created {count} containers from SOC insights"
-ACTION_SOC_INSIGHTS_EMPTY = "No SOC Insights data found for the specified time period"
+ACTION_IQ_FOR_TD_INSIGHTS_SUCCESS = "Successfully retrieved {count} IQ for TD insights for polling"
+ACTION_IQ_FOR_TD_INSIGHTS_CONTAINERS_CREATED = "Successfully created {count} containers from IQ for TD insights"
+ACTION_IQ_FOR_TD_INSIGHTS_EMPTY = "No IQ for TD Insights data found for the specified time period"
 
 # On-poll specific messages
-INFOBLOX_SOC_INSIGHTS_POLL_START = "Starting SOC insights polling"
-INFOBLOX_SOC_INSIGHTS_POLL_FINISH = "SOC insights polling completed"
+INFOBLOX_IQ_FOR_TD_INSIGHTS_POLL_START = "Starting IQ for TD insights polling"
+INFOBLOX_IQ_FOR_TD_INSIGHTS_POLL_FINISH = "IQ for TD insights polling completed"
 INFOBLOX_DNS_EVENTS_POLL_START = "Starting DNS security events polling"
 INFOBLOX_DNS_EVENTS_POLL_FINISH = "DNS security events polling completed"
 
@@ -133,15 +155,20 @@ NAMED_LIST_TYPES = {
     "threat_intelligence": "threat_intelligence",
 }
 
-# SOC Insights specific constants
-SOC_INSIGHTS_CONTAINER_SOURCE_ID_KEY = "infoblox_insight_id"
+# IQ for TD Insights specific constants
+IQ_FOR_TD_INSIGHTS_CONTAINER_SOURCE_ID_KEY = "infoblox_insight_id"
+IQ_FOR_TD_INSIGHT_STATUS_VALUES = ["Needs Review", "In Progress", "Resolved", "Reopened", "Accepted Risk", "False Positive"]
 
-# Phantom severity mapping for SOC insights
-PHANTOM_SEVERITY_MAP = {"LOW": "low", "INFO": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "high"}
+# Phantom severity mapping for IQ for TD insights
+PHANTOM_SEVERITY_MAP = {"LOW": "low", "MEDIUM": "medium", "HIGH": "high", "CRITICAL": "high"}
 
 # Default limits
 DEFAULT_LIMIT = 100
 MAX_LIMIT = 1000
+
+# IQ for TD Insights v2 sub-resource limits (per Infoblox v2 Insights API defaults)
+IQ_FOR_TD_INSIGHTS_DEFAULT_LIMIT = 1000
+IQ_FOR_TD_INSIGHTS_EVENTS_DEFAULT_LIMIT = 5000
 
 # Address states for validation
 VALID_ADDRESS_STATES = ["Free", "Used", "Any"]

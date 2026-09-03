@@ -1,4 +1,4 @@
-# File: infoblox_get_soc_insights_events.py
+# File: infoblox_get_iq_for_td_insights_events.py
 #
 # Copyright 2025-2026 Infoblox Inc.
 #
@@ -21,16 +21,16 @@ import infoblox_consts as consts
 from actions import BaseAction
 
 
-class GetSocInsightsEvents(BaseAction):
-    """Class to handle retrieving SOC insights events.
+class GetIqForTdInsightsEvents(BaseAction):
+    """Class to handle retrieving IQ for TD insights events.
 
     This action retrieves a detailed list of threat-related events for a specific
-    Insight ID from Infoblox SOC Insights, supporting multiple filter parameters.
+    Insight ID from Infoblox IQ for TD Insights, supporting multiple filter parameters.
     """
 
     def __log_action_start(self):
         """Log the start of the action execution."""
-        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get SOC Insights Events"))
+        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get IQ for TD Insights Events"))
 
     def _validate_params(self):
         """
@@ -44,26 +44,22 @@ class GetSocInsightsEvents(BaseAction):
         if phantom.is_fail(ret_val):
             return ret_val
 
-        # Validate from parameter if provided
-        from_time = self._param.get("from")
-        if from_time:
-            if not self._connector.validator.validate_datetime_format(from_time):
+        # Validate detected_from parameter if provided
+        detected_from = self._param.get("detected_from")
+        if detected_from:
+            if not self._connector.validator.validate_rfc3339_datetime(detected_from):
                 return self._action_result.set_status(
-                    phantom.APP_ERROR,
-                    "From parameter must be in format YYYY-MM-DDTHH:mm:ss.SSS. Example: '2025-06-11T04:10:00.000'",
+                    phantom.APP_ERROR, consts.ERROR_INVALID_RFC3339_DATETIME_FORMAT.format(key="detected_from")
                 )
 
-        # Validate to parameter if provided
-        to_time = self._param.get("to")
-        if to_time:
-            if not self._connector.validator.validate_datetime_format(to_time):
-                return self._action_result.set_status(
-                    phantom.APP_ERROR,
-                    "To parameter must be in format YYYY-MM-DDTHH:mm:ss.SSS. Example: '2025-06-11T04:10:00.000'",
-                )
+        # Validate detected_to parameter if provided
+        detected_to = self._param.get("detected_to")
+        if detected_to:
+            if not self._connector.validator.validate_rfc3339_datetime(detected_to):
+                return self._action_result.set_status(phantom.APP_ERROR, consts.ERROR_INVALID_RFC3339_DATETIME_FORMAT.format(key="detected_to"))
 
         # Validate limit parameter if provided
-        limit = self._param.get("limit")
+        limit = self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_EVENTS_DEFAULT_LIMIT)
         if limit is not None:
             ret_val, limit = self._connector.validator.validate_integer(
                 self._action_result, limit, "limit", allow_zero=False, allow_negative=False
@@ -71,21 +67,18 @@ class GetSocInsightsEvents(BaseAction):
             if phantom.is_fail(ret_val):
                 return ret_val
 
-            # Check limit range
-            if limit > consts.MAX_LIMIT:
-                return self._action_result.set_status(phantom.APP_ERROR, f"Limit parameter must be less than or equal to {consts.MAX_LIMIT}")
-
-        # Validate device_ip parameter if provided
+        # Validate device_ip parameter if provided - comma-separated list of IP addresses
         device_ip = self._param.get("device_ip")
         if device_ip:
-            if not self._connector.validator.validate_ip_address(device_ip):
-                return self._action_result.set_status(phantom.APP_ERROR, f"Invalid device IP address format: {device_ip}")
+            for ip in [ip.strip() for ip in device_ip.split(",") if ip.strip()]:
+                if not self._connector.validator.validate_ip_address(ip):
+                    return self._action_result.set_status(phantom.APP_ERROR, f"Invalid device IP address format: {ip}")
 
         return phantom.APP_SUCCESS
 
     def __make_api_call(self):
         """
-        Make API call to retrieve SOC insights events.
+        Make API call to retrieve IQ for TD insights events.
 
         Returns:
             tuple: (status, response) - Status code and API response
@@ -93,37 +86,41 @@ class GetSocInsightsEvents(BaseAction):
         insight_id = quote(str(self._param.get("insight_id")), safe="")
 
         # Build endpoint
-        endpoint = consts.SOC_INSIGHTS_EVENTS_ENDPOINT.format(insight_id)
+        endpoint = consts.IQ_FOR_TD_INSIGHTS_EVENTS_ENDPOINT.format(insight_id)
 
         # Build query parameters dynamically
         params = {}
 
-        # Add optional filter parameters if provided
-        # Note: Exclude threat_level and confidence_level if set to "All" as API doesn't support it
+        # Note: Exclude threat_level and threat_confidence if set to "All" as API doesn't support it
         threat_level = self._param.get("threat_level")
         if threat_level and threat_level.lower() != "all":
             params["threat_level"] = threat_level
 
-        confidence_level = self._param.get("confidence_level")
-        if confidence_level and confidence_level.lower() != "all":
-            params["confidence_level"] = confidence_level
+        threat_confidence = self._param.get("threat_confidence")
+        if threat_confidence and threat_confidence.lower() != "all":
+            params["threat_confidence"] = threat_confidence
 
         if self._param.get("query"):
             params["query"] = self._param.get("query")
-        if self._param.get("query_type"):
-            params["query_type"] = self._param.get("query_type")
+        if self._param.get("tclass"):
+            params["tclass"] = self._param.get("tclass")
         if self._param.get("source"):
             params["source"] = self._param.get("source")
         if self._param.get("device_ip"):
             params["device_ip"] = self._param.get("device_ip")
+        if self._param.get("device_name"):
+            params["device_name"] = self._param.get("device_name")
+        if self._param.get("user"):
+            params["user"] = self._param.get("user")
         if self._param.get("indicator"):
             params["indicator"] = self._param.get("indicator")
-        if self._param.get("from"):
-            params["from"] = self._param.get("from")
-        if self._param.get("to"):
-            params["to"] = self._param.get("to")
-        if self._param.get("limit"):
-            params["limit"] = self._param.get("limit")
+        if self._param.get("detected_from"):
+            params["detected_from"] = self._param.get("detected_from")
+        if self._param.get("detected_to"):
+            params["detected_to"] = self._param.get("detected_to")
+        limit = self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_EVENTS_DEFAULT_LIMIT)
+        if limit is not None:
+            params["limit"] = limit
 
         self._connector.debug_print(f"Making API call to {endpoint}")
         self._connector.debug_print(f"Query parameters: {params}")
@@ -161,7 +158,7 @@ class GetSocInsightsEvents(BaseAction):
             summary = {
                 "total_events": 0,
                 "insight_id": self._param.get("insight_id", "Unknown"),
-                "limit_applied": self._param.get("limit", 100),
+                "limit_applied": self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_EVENTS_DEFAULT_LIMIT),
             }
             self._action_result.update_summary(summary)
 
@@ -180,7 +177,7 @@ class GetSocInsightsEvents(BaseAction):
         summary = {
             "total_events": total_events,
             "insight_id": self._param.get("insight_id", "Unknown"),
-            "limit_applied": self._param.get("limit", 100),
+            "limit_applied": self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_EVENTS_DEFAULT_LIMIT),
         }
 
         self._action_result.update_summary(summary)
@@ -192,7 +189,7 @@ class GetSocInsightsEvents(BaseAction):
 
     def execute(self):
         """
-        Execute get SOC insights events action following the modular approach.
+        Execute get IQ for TD insights events action following the modular approach.
 
         Step 1: Log action start
         Step 2: Validate parameters
@@ -225,5 +222,5 @@ class GetSocInsightsEvents(BaseAction):
             return ret_val
 
         # Step 5: Return results
-        self._connector.save_progress("SOC insights events retrieved successfully")
+        self._connector.save_progress("IQ for TD insights events retrieved successfully")
         return phantom.APP_SUCCESS

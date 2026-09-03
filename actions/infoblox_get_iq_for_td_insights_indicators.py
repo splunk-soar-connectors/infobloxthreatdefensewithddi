@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# File: infoblox_get_soc_insights_indicators.py
+# File: infoblox_get_iq_for_td_insights_indicators.py
 #
 # Copyright (c) 2025-2026 Infoblox Inc.
 #
@@ -23,8 +23,8 @@ import infoblox_consts as consts
 from actions import BaseAction
 
 
-class GetSocInsightsIndicators(BaseAction):
-    """Class to handle retrieving SOC insights indicators.
+class GetIqForTdInsightsIndicators(BaseAction):
+    """Class to handle retrieving IQ for TD insights indicators.
 
     This action retrieves a filtered list of indicators associated with a specific
     Insight ID from Infoblox, supporting multiple filter parameters.
@@ -32,7 +32,7 @@ class GetSocInsightsIndicators(BaseAction):
 
     def __log_action_start(self):
         """Log the start of the action execution."""
-        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get SOC Insights Indicators"))
+        self._connector.save_progress(consts.EXECUTION_START_MSG.format("Get IQ for TD Insights Indicators"))
 
     def _validate_params(self):
         """
@@ -46,26 +46,14 @@ class GetSocInsightsIndicators(BaseAction):
         if phantom.is_fail(ret_val):
             return ret_val
 
-        # Validate from parameter if provided
-        from_time = self._param.get("from")
-        if from_time:
-            if not self._connector.validator.validate_datetime_format(from_time):
-                return self._action_result.set_status(
-                    phantom.APP_ERROR,
-                    "From parameter must be in format YYYY-MM-DDTHH:mm:ss.SSS. Example: '2025-06-11T04:10:00.000'",
-                )
-
-        # Validate to parameter if provided
-        to_time = self._param.get("to")
-        if to_time:
-            if not self._connector.validator.validate_datetime_format(to_time):
-                return self._action_result.set_status(
-                    phantom.APP_ERROR,
-                    "To parameter must be in format YYYY-MM-DDTHH:mm:ss.SSS. Example: '2025-06-11T04:10:00.000'",
-                )
+        # Validate detected_at parameter if provided
+        detected_at = self._param.get("detected_at")
+        if detected_at:
+            if not self._connector.validator.validate_rfc3339_datetime(detected_at):
+                return self._action_result.set_status(phantom.APP_ERROR, consts.ERROR_INVALID_RFC3339_DATETIME_FORMAT.format(key="detected_at"))
 
         # Validate limit parameter if provided
-        limit = self._param.get("limit")
+        limit = self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_DEFAULT_LIMIT)
         if limit is not None:
             ret_val, limit = self._connector.validator.validate_integer(
                 self._action_result, limit, "limit", allow_zero=False, allow_negative=False
@@ -73,51 +61,37 @@ class GetSocInsightsIndicators(BaseAction):
             if phantom.is_fail(ret_val):
                 return ret_val
 
-            # Check limit range
-            if limit > consts.MAX_LIMIT:
-                return self._action_result.set_status(phantom.APP_ERROR, "Limit parameter must be less than or equal to 1000")
-
         return phantom.APP_SUCCESS
 
     def __make_api_call(self):
         """
-        Make the API call to get SOC insights indicators.
+        Make the API call to get IQ for TD insights indicators.
 
         Returns:
             tuple: (status, response) - Status code and API response
         """
         insight_id = quote(str(self._param.get("insight_id")), safe="")
-        endpoint = consts.SOC_INSIGHTS_INDICATORS_ENDPOINT.format(insight_id)
+        endpoint = consts.IQ_FOR_TD_INSIGHTS_INDICATORS_ENDPOINT.format(insight_id)
 
         # Build query parameters
         params = {}
 
-        # Add filter parameters if provided
-        confidence = self._param.get("confidence")
-        if confidence:
-            params["confidence"] = confidence
+        if self._param.get("indicators"):
+            params["indicators"] = self._param.get("indicators")
 
-        indicator = self._param.get("indicator")
-        if indicator:
-            params["indicator"] = indicator
+        if self._param.get("threat_level"):
+            params["threat_level"] = self._param.get("threat_level")
 
-        actor = self._param.get("actor")
-        if actor:
-            params["actor"] = actor
+        if self._param.get("status"):
+            params["status"] = self._param.get("status")
 
-        action = self._param.get("action")
-        if action:
-            params["action"] = action
+        if self._param.get("users"):
+            params["users"] = self._param.get("users")
 
-        from_time = self._param.get("from")
-        if from_time:
-            params["from"] = from_time
+        if self._param.get("detected_at"):
+            params["detected_at"] = self._param.get("detected_at")
 
-        to_time = self._param.get("to")
-        if to_time:
-            params["to"] = to_time
-
-        limit = self._param.get("limit")
+        limit = self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_DEFAULT_LIMIT)
         if limit is not None:
             params["limit"] = limit
 
@@ -165,7 +139,7 @@ class GetSocInsightsIndicators(BaseAction):
         summary = {
             "total_indicators": total_indicators,
             "insight_id": self._param.get("insight_id", "Unknown"),
-            "limit_applied": self._param.get("limit", 100),
+            "limit_applied": self._param.get("limit", consts.IQ_FOR_TD_INSIGHTS_DEFAULT_LIMIT),
         }
 
         self._action_result.update_summary(summary)
@@ -177,7 +151,7 @@ class GetSocInsightsIndicators(BaseAction):
 
     def execute(self):
         """
-        Execute get SOC insights indicators action following the modular approach.
+        Execute get IQ for TD insights indicators action following the modular approach.
 
         Step 1: Log action start
         Step 2: Validate parameters
@@ -209,5 +183,5 @@ class GetSocInsightsIndicators(BaseAction):
             return ret_val
 
         # Step 5: Return results
-        self._connector.save_progress("SOC insights indicators retrieved successfully")
+        self._connector.save_progress("IQ for TD insights indicators retrieved successfully")
         return phantom.APP_SUCCESS

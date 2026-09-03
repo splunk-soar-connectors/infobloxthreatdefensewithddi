@@ -28,3 +28,39 @@ class BaseAction:
         self._connector = connector
         self._action_result = connector.add_action_result(ActionResult(dict(param)))
         self._param = param
+
+
+# Import every action module so its BaseAction subclass registers itself here. The connector's
+# handle_action then looks the class up via BaseAction.__subclasses__() instead of importing a
+# module built from a runtime string.
+from . import (
+    infoblox_create_custom_list,
+    infoblox_create_network_list,
+    infoblox_create_security_policy,
+    infoblox_dhcp_lease_lookup,
+    infoblox_dns_record_lookup,
+    infoblox_execute_iq_for_td_recommendation_actions,
+    infoblox_get_custom_list,
+    infoblox_get_indicator_intel_lookup_result,
+    infoblox_get_iq_for_td_insight_details,
+    infoblox_get_iq_for_td_insights_assets,
+    infoblox_get_iq_for_td_insights_events,
+    infoblox_get_iq_for_td_insights_indicators,
+    infoblox_get_network_list,
+    infoblox_get_security_policy,
+    infoblox_host_asset_data_lookup,
+    infoblox_indicator_threat_lookup,
+    infoblox_initiate_indicator_intel_lookup,
+    infoblox_ip_asset_data_lookup,
+    infoblox_on_poll,
+    infoblox_remove_custom_list,
+    infoblox_remove_network_list,
+    infoblox_remove_security_policy,
+    infoblox_test_connectivity,
+    infoblox_undo_iq_for_td_recommendation_action,
+    infoblox_update_custom_list,
+    infoblox_update_custom_list_items,
+    infoblox_update_iq_for_td_insight_status,
+    infoblox_update_network_list,
+    infoblox_update_security_policy,
+)
