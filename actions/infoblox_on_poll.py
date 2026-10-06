@@ -52,17 +52,15 @@ class OnPoll(BaseAction):
         self._is_poll_now = self._connector.is_poll_now()
         self._state = self._connector._state
 
-        # Honor SOAR's container_count/artifact_count only for a manual "Poll Now" run. The IQ
+        # Honor SOAR's container_count only for a manual "Poll Now" run. The IQ
         # insights API returns every matching insight in a single unpaginated response and this
         # poll keeps no checkpoint, so capping a scheduled run would re-process the same first N
         # insights on every run and permanently skip the rest. Scheduled runs are bounded by the
         # asset's IQ for TD filters instead.
         if self._is_poll_now:
             self._container_count = self._normalize_poll_limit(param.get(phantom.APP_JSON_CONTAINER_COUNT))
-            self._artifact_count = self._normalize_poll_limit(param.get(phantom.APP_JSON_ARTIFACT_COUNT))
         else:
             self._container_count = None
-            self._artifact_count = None
 
         # Get the ingestion type from the configuration
         ingestion_type = config.get("ingestion_type", "DNS Security Events")
@@ -101,10 +99,12 @@ class OnPoll(BaseAction):
 
     @staticmethod
     def _normalize_poll_limit(value):
-        """Coerce a SOAR poll limit to a non-negative int, or None when it is absent/unusable.
+        """Coerce a SOAR poll limit to a positive int, or None for "no limit".
+
+        SOAR treats an absent, unparsable, or non-positive count as unlimited.
 
         Args:
-            value: Raw ``container_count``/``artifact_count`` value from the poll parameters
+            value: Raw ``container_count`` value from the poll parameters
 
         Returns:
             int or None: The limit to enforce, or None for "no limit"
@@ -115,7 +115,7 @@ class OnPoll(BaseAction):
             limit = int(value)
         except (ValueError, TypeError):
             return None
-        return limit if limit >= 0 else None
+        return limit if limit > 0 else None
 
     def _process_parameters(self, config):
         """Process and validate parameters from the asset configuration.
@@ -715,11 +715,10 @@ class OnPoll(BaseAction):
                     containers_created += 1
                     self._connector.debug_print(consts.CONTAINER_CREATED_MSG.format(insight_id=insight_id))
 
-                # Create an artifact for this insight, unless the poll asked for no artifacts
-                if self._artifact_count is None or self._artifact_count > 0:
-                    artifact_id = self._create_artifact_for_insight(insight, container_id)
-                    if artifact_id is not None:
-                        self._connector.debug_print(consts.ARTIFACT_CREATED_MSG.format(insight_id=insight_id))
+                # Create an artifact for this insight
+                artifact_id = self._create_artifact_for_insight(insight, container_id)
+                if artifact_id is not None:
+                    self._connector.debug_print(consts.ARTIFACT_CREATED_MSG.format(insight_id=insight_id))
 
                 if (i + 1) % 10 == 0:
                     self._connector.save_progress(f"Processed {i + 1} of {len(insights)} insights")

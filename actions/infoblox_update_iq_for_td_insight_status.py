@@ -78,7 +78,7 @@ class UpdateIqForTdInsightStatus(BaseAction):
         """
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
-        self._connector.debug_print(f"Updating insight status with payload: {payload}")
+        self._connector.debug_print(f"Updating insight {payload.get('insight_id')} to status {payload.get('status')}")
 
         return self._connector.util.make_rest_call(
             endpoint=consts.IQ_FOR_TD_INSIGHT_STATUS_ENDPOINT,

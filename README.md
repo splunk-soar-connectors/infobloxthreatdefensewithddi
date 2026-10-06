@@ -69,7 +69,7 @@ The **Poll Now** action retrieves the data based on the **Max Hours Backwards** 
 
 - The *Poll Now* feature **ignores** the **Source ID** parameter.
 - For ingestion type **DNS Security Events**, the *Poll Now* feature also **ignores** the **Maximum containers** and **Maximum artifacts** parameters; the asset's **Limit** parameter bounds the run instead.
-- For ingestion type **IQ for TD Insights**, **Maximum containers** caps the number of insights ingested in the run, and setting **Maximum artifacts** to `0` ingests containers without artifacts.
+- For ingestion type **IQ for TD Insights**, **Maximum containers** caps the number of insights ingested in the run (a value of `0` or less means no limit), and **Maximum artifacts** is ignored because each insight creates a single artifact.
 - The *Poll Now* feature does **not** store a checkpoint file, meaning it will fetch data according to the configured parameters without considering previous ingestions.
 
 ### Scheduled / Interval Polling
