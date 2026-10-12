@@ -15,7 +15,6 @@
 
 import json
 import sys
-from importlib import import_module
 
 # Phantom App imports
 import phantom.app as phantom
@@ -62,7 +61,6 @@ class InfobloxConnector(BaseConnector):
         self.debug_print("action_id", self.get_action_identifier())
 
         action_name = f"actions.infoblox_{action_id}"
-        import_module(action_name, package="actions")
 
         base_action_sub_classes = BaseAction.__subclasses__()
         self.debug_print(f"Finding action module: {action_name}")

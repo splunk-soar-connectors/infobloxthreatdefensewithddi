@@ -13,7 +13,7 @@
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
 
-from datetime import datetime
+import time
 
 import phantom.app as phantom
 
@@ -30,7 +30,7 @@ class OnPoll(BaseAction):
 
         Step 1: Check ingestion type from configuration
         Step 2: If DNS Security Events, process those events
-        Step 3: If SOC Insights, process those events
+        Step 3: If IQ for TD Insights, process those events
         Step 4: Save checkpoint for future polling
 
         Args:
@@ -52,6 +52,16 @@ class OnPoll(BaseAction):
         self._is_poll_now = self._connector.is_poll_now()
         self._state = self._connector._state
 
+        # Honor SOAR's container_count only for a manual "Poll Now" run. The IQ
+        # insights API returns every matching insight in a single unpaginated response and this
+        # poll keeps no checkpoint, so capping a scheduled run would re-process the same first N
+        # insights on every run and permanently skip the rest. Scheduled runs are bounded by the
+        # asset's IQ for TD filters instead.
+        if self._is_poll_now:
+            self._container_count = self._normalize_poll_limit(param.get(phantom.APP_JSON_CONTAINER_COUNT))
+        else:
+            self._container_count = None
+
         # Get the ingestion type from the configuration
         ingestion_type = config.get("ingestion_type", "DNS Security Events")
 
@@ -63,29 +73,49 @@ class OnPoll(BaseAction):
                 return self._action_result.get_status()
 
             # Start the polling process for DNS Security Events
-            ret_val, response = self._poll_dns_security_events()
+            ret_val, _ = self._poll_dns_security_events()
             if phantom.is_fail(ret_val):
                 return self._action_result.get_status()
-        elif ingestion_type == "SOC Insights":
-            self._connector.debug_print("This asset is configured to ingest SOC Insights")
-            self._connector.save_progress(consts.INFOBLOX_SOC_INSIGHTS_POLL_START)
+        elif ingestion_type == "IQ for TD Insights":
+            self._connector.debug_print("This asset is configured to ingest IQ for TD Insights")
+            self._connector.save_progress(consts.INFOBLOX_IQ_FOR_TD_INSIGHTS_POLL_START)
 
-            # Process parameters for SOC Insights polling
-            ret_val = self._process_soc_insights_parameters(config)
-            if phantom.is_fail(ret_val):
-                return self._action_result.get_status()
-
-            # Start the polling process for SOC Insights
-            ret_val, response = self._poll_soc_insights()
+            # Process parameters for IQ for TD Insights polling
+            ret_val = self._process_iq_for_td_insights_parameters(config)
             if phantom.is_fail(ret_val):
                 return self._action_result.get_status()
 
-            self._connector.save_progress(consts.INFOBLOX_SOC_INSIGHTS_POLL_FINISH)
+            # Start the polling process for IQ for TD Insights
+            ret_val, _ = self._poll_iq_for_td_insights()
+            if phantom.is_fail(ret_val):
+                return self._action_result.get_status()
+
+            self._connector.save_progress(consts.INFOBLOX_IQ_FOR_TD_INSIGHTS_POLL_FINISH)
         else:
             self._connector.save_progress(f"Invalid ingestion type: {ingestion_type}")
             return self._action_result.set_status(phantom.APP_ERROR, f"Invalid ingestion type: {ingestion_type}")
 
         return self._action_result.set_status(phantom.APP_SUCCESS)
+
+    @staticmethod
+    def _normalize_poll_limit(value):
+        """Coerce a SOAR poll limit to a positive int, or None for "no limit".
+
+        SOAR treats an absent, unparsable, or non-positive count as unlimited.
+
+        Args:
+            value: Raw ``container_count`` value from the poll parameters
+
+        Returns:
+            int or None: The limit to enforce, or None for "no limit"
+        """
+        if value is None:
+            return None
+        try:
+            limit = int(value)
+        except (ValueError, TypeError):
+            return None
+        return limit if limit > 0 else None
 
     def _process_parameters(self, config):
         """Process and validate parameters from the asset configuration.
@@ -128,7 +158,11 @@ class OnPoll(BaseAction):
         for param_name in multi_value_params:
             param_value = getattr(self, param_name)
             if param_value and isinstance(param_value, str):
-                setattr(self, param_name, [x.strip() for x in param_value.split(",") if x.strip()])
+                setattr(
+                    self,
+                    param_name,
+                    [x.strip() for x in param_value.split(",") if x.strip()],
+                )
 
         # Convert limit to integer
         try:
@@ -160,7 +194,10 @@ class OnPoll(BaseAction):
         # Make the API request
         endpoint = consts.DNS_SECURITY_EVENTS_ENDPOINT
         ret_val, response = self._connector.util.make_rest_call(
-            endpoint=endpoint, action_result=self._action_result, method="get", params=params
+            endpoint=endpoint,
+            action_result=self._action_result,
+            method="get",
+            params=params,
         )
 
         if phantom.is_fail(ret_val):
@@ -190,7 +227,11 @@ class OnPoll(BaseAction):
         Returns:
             tuple: (t0, t1) timestamps in seconds since epoch
         """
-        current_time = int(datetime.utcnow().timestamp())
+        # time.time() is an absolute UTC epoch. datetime.utcnow().timestamp() must not be used
+        # here: utcnow() is naive, so .timestamp() re-interprets it as local time and shifts the
+        # whole polling window by the host's UTC offset, while the checkpoint stored in state is a
+        # true UTC epoch produced by parse_event_timestamp().
+        current_time = int(time.time())
 
         if self._is_poll_now:
             # For manual polling, use the configured lookback period
@@ -514,8 +555,8 @@ class OnPoll(BaseAction):
 
         return None
 
-    def _process_soc_insights_parameters(self, config):
-        """Process and validate parameters from the asset configuration for SOC Insights polling.
+    def _process_iq_for_td_insights_parameters(self, config):
+        """Process and validate parameters from the asset configuration for IQ for TD Insights polling.
 
         Args:
             config (dict): Asset configuration dictionary
@@ -523,237 +564,318 @@ class OnPoll(BaseAction):
         Returns:
             int: phantom.APP_SUCCESS or phantom.APP_ERROR
         """
-        self._connector.debug_print("Processing parameters for SOC Insights polling")
+        self._connector.debug_print("Processing parameters for IQ for TD Insights polling")
 
-        # Initialize parameters from config for SOC Insights
-        self._soc_status = config.get("soc_status", "")
-        self._soc_threat_type = config.get("soc_threat_type", "")
-        self._soc_priority = config.get("soc_priority", "")
+        # Initialize parameters from config for IQ for TD Insights
+        self._iq_for_td_status = config.get("iq_for_td_status", "ALL")
+        self._iq_for_td_severity = config.get("iq_for_td_severity", "ALL")
+        self._iq_for_td_name = config.get("iq_for_td_name", "")
+        self._iq_for_td_threat_properties = config.get("iq_for_td_threat_properties", "")
+        self._iq_for_td_date_created = config.get("iq_for_td_date_created", "")
+        self._iq_for_td_insight_id = config.get("iq_for_td_insight_id", "")
+        self._iq_for_td_indicators = config.get("iq_for_td_indicators", "")
+        self._iq_for_td_assets = config.get("iq_for_td_assets", "")
+        self._iq_for_td_user = config.get("iq_for_td_user", "")
+
+        if self._iq_for_td_date_created and not self._connector.validator.validate_rfc3339_datetime(self._iq_for_td_date_created):
+            return self._action_result.set_status(
+                phantom.APP_ERROR,
+                consts.ERROR_INVALID_RFC3339_DATETIME_FORMAT.format(key="iq_for_td_date_created"),
+            )
 
         return phantom.APP_SUCCESS
 
-    def _poll_soc_insights(self):
-        """Poll for SOC Insights from Infoblox.
+    def _poll_iq_for_td_insights(self):
+        """Poll for IQ for TD Insights from Infoblox.
 
         Constructs the API request and processes the response.
         No checkpointing is used since the API doesn't support time-based filtering.
-        Deduplication is handled via insightId using SOAR's built-in mechanisms.
+        Deduplication is handled via insight_id using SOAR's built-in mechanisms.
 
         Returns:
             tuple: (phantom.APP_SUCCESS/APP_ERROR, API response data)
         """
-        self._connector.save_progress("Polling for SOC Insights")
+        self._connector.save_progress("Polling for IQ for TD Insights")
 
         # Construct query parameters
-        params = self._build_soc_insights_query_params()
+        params = self._build_iq_for_td_insights_query_params()
 
         # Make the API request
-        endpoint = consts.SOC_INSIGHTS_ENDPOINT
+        endpoint = consts.IQ_FOR_TD_INSIGHTS_ENDPOINT
         ret_val, response = self._connector.util.make_rest_call(
-            endpoint=endpoint, action_result=self._action_result, method="get", params=params
+            endpoint=endpoint,
+            action_result=self._action_result,
+            method="get",
+            params=params,
         )
 
         if phantom.is_fail(ret_val):
-            self._connector.save_progress("Failed to fetch SOC Insights")
+            self._connector.save_progress("Failed to fetch IQ for TD Insights")
             return ret_val, None
 
         # Validate response structure
-        if not response or "insightList" not in response:
-            self._connector.save_progress(consts.ACTION_SOC_INSIGHTS_EMPTY)
+        if not response or "insight_list" not in response:
+            self._connector.save_progress(consts.ACTION_IQ_FOR_TD_INSIGHTS_EMPTY)
             return phantom.APP_SUCCESS, response
 
-        insights = response.get("insightList", [])
+        insights = response.get("insight_list", [])
         if not insights:
-            self._connector.save_progress(consts.ACTION_SOC_INSIGHTS_EMPTY)
+            self._connector.save_progress(consts.ACTION_IQ_FOR_TD_INSIGHTS_EMPTY)
             return phantom.APP_SUCCESS, response
 
-        self._connector.save_progress(consts.ACTION_SOC_INSIGHTS_SUCCESS.format(count=len(insights)))
+        self._connector.save_progress(consts.ACTION_IQ_FOR_TD_INSIGHTS_SUCCESS.format(count=len(insights)))
+
+        if self._container_count is not None and len(insights) > self._container_count:
+            self._connector.save_progress(
+                f"Limiting ingestion to the requested maximum of {self._container_count} container(s) out of {len(insights)} insight(s) returned"
+            )
+            insights = insights[: self._container_count]
 
         # Process the response and create containers/artifacts
-        ret_val, containers_created = self._process_soc_insights(insights)
+        ret_val, containers_created = self._process_iq_for_td_insights(insights)
         if phantom.is_fail(ret_val):
             return ret_val, None
 
-        self._connector.save_progress(consts.ACTION_SOC_INSIGHTS_CONTAINERS_CREATED.format(count=containers_created))
+        self._connector.save_progress(consts.ACTION_IQ_FOR_TD_INSIGHTS_CONTAINERS_CREATED.format(count=containers_created))
 
         return phantom.APP_SUCCESS, response
 
-    def _build_soc_insights_query_params(self):
-        """Build query parameters for the SOC Insights API.
+    def _build_iq_for_td_insights_query_params(self):
+        """Build query parameters for the IQ for TD Insights API.
 
         Returns:
             dict: Query parameters for API request
         """
         params = {}
 
-        # Add filtering parameters if provided
-        if self._soc_status:
-            params["status"] = self._soc_status
+        # Add filtering parameters if provided - if 'ALL' is selected, don't add the parameter
+        # so the API returns insights across all statuses/severity levels
+        if self._iq_for_td_status and self._iq_for_td_status.lower() != "all":
+            params["status"] = self._iq_for_td_status
 
-        if self._soc_threat_type:
-            params["threatType"] = self._soc_threat_type
+        if self._iq_for_td_severity and self._iq_for_td_severity.lower() != "all":
+            # The API expects title-cased severity values (Critical, High, Medium, Low),
+            # while the asset config value_list stores them uppercase (e.g. "HIGH").
+            params["severity"] = self._iq_for_td_severity.capitalize()
 
-        if self._soc_priority and self._soc_priority.lower() != "all":
-            params["priority"] = self._soc_priority
+        if self._iq_for_td_name:
+            params["name"] = self._iq_for_td_name
 
-        self._connector.debug_print(f"SOC Insights query parameters: {params}")
+        if self._iq_for_td_threat_properties:
+            params["threat_properties"] = self._iq_for_td_threat_properties
+
+        if self._iq_for_td_date_created:
+            params["date_created"] = self._iq_for_td_date_created
+
+        if self._iq_for_td_insight_id:
+            params["insight_id"] = self._iq_for_td_insight_id
+
+        if self._iq_for_td_indicators:
+            params["indicators"] = self._iq_for_td_indicators
+
+        if self._iq_for_td_assets:
+            params["assets"] = self._iq_for_td_assets
+
+        if self._iq_for_td_user:
+            params["user"] = self._iq_for_td_user
+
+        self._connector.debug_print(f"IQ for TD Insights query parameters: {params}")
         return params
 
-    def _process_soc_insights(self, insights):
-        """Process the SOC Insights response and create containers and artifacts.
+    def _process_iq_for_td_insights(self, insights):
+        """Process the IQ for TD Insights response and create containers and artifacts.
 
         Args:
-            insights (list): List of SOC Insights from API response
+            insights (list): List of IQ for TD Insights from API response
 
         Returns:
             tuple: (phantom.APP_SUCCESS or phantom.APP_ERROR, containers_created_count)
         """
         if not insights:
-            self._connector.save_progress("No SOC Insights found in the response")
+            self._connector.save_progress("No IQ for TD Insights found in the response")
             return phantom.APP_SUCCESS, 0
 
-        self._connector.save_progress(f"Processing {len(insights)} SOC Insights")
+        self._connector.save_progress(f"Processing {len(insights)} IQ for TD Insights")
         containers_created = 0
 
         # Process each insight and create a container with artifacts
         for i, insight in enumerate(insights):
             try:
-                insight_id = insight.get("insightId")
+                insight_id = insight.get("insight_id")
                 if not insight_id:
-                    self._connector.debug_print("Skipping insight without insightId")
+                    self._connector.debug_print("Skipping insight without insight_id")
                     continue
 
-                # Create a container for this insight
-                container_result = self._create_container_for_insight(insight)
-                self._connector.debug_print(f"Container result for insight {insight_id}: {container_result}")
-                if container_result and len(container_result) > 2:
-                    container_id = container_result[2]
+                # Create (or reuse the duplicate of) the container for this insight
+                container_id, is_duplicate = self._create_container_for_insight(insight)
+                if container_id is None:
+                    continue
 
+                if not is_duplicate:
                     containers_created += 1
                     self._connector.debug_print(consts.CONTAINER_CREATED_MSG.format(insight_id=insight_id))
 
-                    # Create an artifact for this insight
-                    artifact_id = self._create_artifact_for_insight(insight, container_id)
-                    if artifact_id:
-                        self._connector.debug_print(consts.ARTIFACT_CREATED_MSG.format(insight_id=insight_id))
+                # Create an artifact for this insight
+                artifact_id = self._create_artifact_for_insight(insight, container_id)
+                if artifact_id is not None:
+                    self._connector.debug_print(consts.ARTIFACT_CREATED_MSG.format(insight_id=insight_id))
 
                 if (i + 1) % 10 == 0:
                     self._connector.save_progress(f"Processed {i + 1} of {len(insights)} insights")
 
             except Exception as e:
-                self._connector.debug_print(f"Error processing insight {insight.get('insightId', 'unknown')}: {e!s}")
+                self._connector.debug_print(f"Error processing insight {insight.get('insight_id', 'unknown')}: {e!s}")
                 continue
 
-        self._connector.save_progress(f"Completed processing SOC Insights. Created {containers_created} new containers.")
+        self._connector.save_progress(f"Completed processing IQ for TD Insights. Created {containers_created} new containers.")
         return phantom.APP_SUCCESS, containers_created
 
     def _create_container_for_insight(self, insight):
-        """Create a container for a SOC Insight.
+        """Create a container for an IQ for TD Insight.
 
         Args:
-            insight (dict): SOC Insight data
+            insight (dict): IQ for TD Insight data
 
         Returns:
-            int: Container ID if successful, None otherwise
+            tuple: (container ID, whether SOAR matched an existing duplicate container), or
+                (None, False) if the container could not be saved
         """
         try:
-            # Generate container name as specified: threatType + '-' + tFamily
-            threat_type = insight.get("threatType", "Unknown")
-            t_family = insight.get("tFamily", "Unknown")
-            container_name = f"{threat_type}-{t_family}"
+            # Generate container name as specified: name + '-' + insight_id
+            name = insight.get("name", "Unknown")
+            insight_id = insight.get("insight_id", "")
+            container_name = f"{name}-{insight_id}"
 
-            insight_id = insight.get("insightId", "")
             self._connector.debug_print(
-                f"Creating container for insight {insight_id} with name {container_name} and priority {insight.get('priorityText', '')}"
+                f"Creating container for insight {insight_id} with name {container_name} and severity {insight.get('severity', '')}"
             )
-            # Map priority to container severity
-            container_severity = self._map_priority_to_severity(insight.get("priorityText", ""))
+            # Map severity to container severity
+            container_severity = self._map_severity(insight.get("severity", ""))
+            container_status = self._map_status(insight.get("status", ""))
 
-            # Generate source data identifier using insightId for deduplication
-            source_data_id = f"{consts.SOC_INSIGHTS_CONTAINER_SOURCE_ID_KEY}_{insight_id}"
+            # Generate source data identifier using insight_id for deduplication
+            source_data_id = f"{consts.IQ_FOR_TD_INSIGHTS_CONTAINER_SOURCE_ID_KEY}_{insight_id}"
 
             # Create the container JSON
             container_json = {
                 "name": container_name,
-                "description": f"SOC Insight: {threat_type} - {t_family}",
+                "description": f"IQ for TD Insight: {name} - {insight_id}",
                 "source_data_identifier": source_data_id,
                 "severity": container_severity,
+                "status": container_status,
                 "label": self._connector.get_config().get("ingest", {}).get("container_label"),
                 "data": insight,
-                "tags": ["infoblox", "soc_insights", threat_type.lower(), t_family.lower()],
+                "tags": ["infoblox", "iq_for_td_insights"],
             }
 
-            return self._connector.save_container(container_json)
+            save_result = self._connector.save_container(container_json)
 
         except Exception as e:
             self._connector.debug_print(f"Error creating container: {e!s}")
-            return None
+            return None, False
 
-    def _map_priority_to_severity(self, priority_text):
-        """Map SOC Insight priority to Phantom container severity.
+        if save_result and len(save_result) == 3:
+            ret_val, message, container_id = save_result
+            if phantom.is_success(ret_val) and container_id is not None:
+                is_duplicate = message == "Duplicate container found"
+                self._connector.debug_print(f"{'Using existing' if is_duplicate else 'Successfully created'} container with ID: {container_id}")
+                return container_id, is_duplicate
+            self._connector.debug_print(f"Failed to create container: {message}")
+        else:
+            self._connector.debug_print("Unexpected return value from save_container")
+
+        return None, False
+
+    def _map_severity(self, severity):
+        """Map IQ for TD Insight severity to Phantom container severity.
 
         Args:
-            priority_text (str): Priority text from insight (LOW, INFO, MEDIUM, HIGH, CRITICAL)
+            severity (str): Severity text from insight (LOW, MEDIUM, HIGH, CRITICAL)
 
         Returns:
             str: Phantom severity level
         """
-        return consts.PHANTOM_SEVERITY_MAP.get(priority_text.upper(), "high")
+        return consts.PHANTOM_SEVERITY_MAP.get(severity.upper(), "high")
 
-    def _create_artifact_for_insight(self, insight, container_id):
-        """Create an artifact for a SOC Insight.
+    def _map_status(self, status):
+        """Map IQ for TD Insight workflow status to a SOAR container status.
 
         Args:
-            insight (dict): SOC Insight data
+            status (str): Status text from insight (e.g. Needs Review, In Progress, Resolved)
+
+        Returns:
+            str: SOAR container status (new, open, or closed)
+        """
+        return consts.PHANTOM_CONTAINER_STATUS_MAP.get(str(status).strip().upper(), consts.DEFAULT_CONTAINER_STATUS)
+
+    @staticmethod
+    def _format_cef_list(value):
+        """Render a possibly list-valued insight field as a CEF-safe scalar.
+
+        Args:
+            value: Raw insight field value, which the API may return as a list
+
+        Returns:
+            str: Comma-joined string for list input, the original scalar otherwise
+        """
+        if isinstance(value, (list, tuple, set)):
+            return ", ".join(str(item) for item in value)
+        return "" if value is None else value
+
+    def _create_artifact_for_insight(self, insight, container_id):
+        """Create an artifact for an IQ for TD Insight.
+
+        Args:
+            insight (dict): IQ for TD Insight data
             container_id (int): The container ID to add the artifact to
 
         Returns:
             int: Artifact ID if successful, None otherwise
         """
         try:
-            insight_id = insight.get("insightId", "")
-            threat_type = insight.get("threatType", "")
-            t_family = insight.get("tFamily", "")
+            insight_id = insight.get("insight_id", "")
+            name = insight.get("name", "")
 
             # Determine the artifact type
-            artifact_type = "SOC Insight Data"
+            artifact_type = "IQ for TD Insight Data"
 
             # Build CEF data with all available insight fields
             cef_data = {
                 # Core Insight Information
                 "Insight ID": insight_id,
-                "Threat Class": insight.get("tClass", ""),
-                "Threat Family": t_family,
-                "Threat Type": threat_type,
+                "Insight Name": name,
+                "Description": insight.get("description", ""),
                 "Status": insight.get("status", ""),
-                "Priority": insight.get("priorityText", ""),
-                "Feed Source": insight.get("feedSource", ""),
+                "Severity": insight.get("severity", ""),
+                # CEF values are consumed as scalars by playbooks and the artifact table, so join
+                # the list form the API returns. The raw list stays in the artifact's `data`.
+                "Threat Properties": self._format_cef_list(insight.get("threat_properties")),
                 # Time Information
-                "Started At": insight.get("startedAt", ""),
-                "Date Changed": insight.get("dateChanged", ""),
-                "Most Recent At": insight.get("mostRecentAt", ""),
-                "Persistent Since": insight.get("persistentDate", ""),
-                "Spreading Since": insight.get("spreadingDate", ""),
-                # Event Statistics
-                "Total Events": insight.get("numEvents", ""),
-                "Blocked Events": insight.get("eventsBlockedCount", ""),
-                "Unblocked Events": insight.get("eventsNotBlockedCount", ""),
-                # Additional Info
-                "Changed By": insight.get("changer", ""),
-                "User Comment": insight.get("userComment", ""),
+                "Date Created": insight.get("date_created", ""),
+                "Evaluation Start Date": insight.get("evaluation_start_date", ""),
+                "Evaluation End Date": insight.get("evaluation_end_date", ""),
+                "Expiring In Days": insight.get("expiring_in_days", ""),
+                # Event & Asset Statistics
+                "Total Events": insight.get("total_events", ""),
+                "Total Assets": insight.get("total_assets", ""),
+                "Total Indicators": insight.get("total_indicators", ""),
+                "Total Users": insight.get("total_users", ""),
+                # Efficiency Metric
+                "Time Saved (Seconds)": insight.get("time_saved_seconds", ""),
+                # Device Info
                 "Device Vendor": "Infoblox",
                 "Device Product": "Infoblox Cloud",
             }
 
             # Generate source data identifier for the artifact
-            source_data_id = f"soc_insight_artifact_{insight_id}"
+            source_data_id = f"iq_for_td_insight_artifact_{insight_id}"
 
-            artifact_severity = self._map_priority_to_severity(insight.get("priorityText", ""))
+            artifact_severity = self._map_severity(insight.get("severity", ""))
 
             # Create the artifact JSON
             artifact_json = {
-                "name": f"SOC Insight Data - {threat_type}-{t_family}",
-                "label": "soc_insight_data",
+                "name": f"IQ for TD Insight Data - {name}-{insight_id}",
+                "label": "iq_for_td_insight_data",
                 "container_id": container_id,
                 "source_data_identifier": source_data_id,
                 "cef": cef_data,
@@ -761,11 +883,21 @@ class OnPoll(BaseAction):
                 "data": insight,
                 "run_automation": True,
                 "severity": artifact_severity,
-                "tags": ["infoblox", "soc_insights"],
+                "tags": ["infoblox", "iq_for_td_insights"],
             }
 
-            return self._connector.save_artifact(artifact_json)
+            save_result = self._connector.save_artifact(artifact_json)
 
         except Exception as e:
             self._connector.debug_print(f"Error creating artifact: {e!s}")
             return None
+
+        if save_result and len(save_result) == 3:
+            ret_val, message, artifact_id = save_result
+            if phantom.is_success(ret_val) and artifact_id is not None:
+                return artifact_id
+            self._connector.debug_print(f"Failed to save artifact: {message}")
+        else:
+            self._connector.debug_print("Unexpected return value from save_artifact")
+
+        return None

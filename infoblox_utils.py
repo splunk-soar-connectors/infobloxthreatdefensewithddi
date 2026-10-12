@@ -18,9 +18,11 @@ import json
 import re
 from datetime import datetime
 
+import encryption_helper
 import phantom.app as phantom
 import requests
 from bs4 import BeautifulSoup
+from phantom.action_result import ActionResult
 
 import infoblox_consts as consts
 
@@ -170,10 +172,13 @@ class InfobloxUtils:
 
         # Try to extract error details from response
         if isinstance(resp_json, dict):
-            # Handle nested error structure: {"error": [{"message": "..."}]}
+            # The error array shape is not guaranteed: some endpoints return an empty list or a
+            # list of plain strings, so never index or attribute-access it unconditionally.
             error_obj = resp_json.get("error")
-            if isinstance(error_obj, list) and error_obj[0].get("message"):
-                error_message += f" Message: {error_obj[0].get('message')}"
+            first_error = error_obj[0] if isinstance(error_obj, list) and error_obj else None
+            # Handle nested error structure: {"error": [{"message": "..."}]}
+            if isinstance(first_error, dict) and first_error.get("message"):
+                error_message += f" Message: {first_error.get('message')}"
             # Handle direct error field
             elif error_obj:
                 error_message += f" Error: {error_obj}"
@@ -218,6 +223,16 @@ class InfobloxUtils:
                 self._connector.debug_print(f"Failed to parse plain/text as JSON: {e!s}")
                 # Continue to other response handlers if JSON parsing fails
 
+        # 401/403 responses that aren't parseable JSON (handled above) typically come from a
+        # proxy/gateway in front of the Infoblox API (e.g. nginx's boilerplate "401 Authorization
+        # Required" page) rather than a useful diagnostic message, so surface a clear, actionable
+        # error instead of dumping that raw text.
+        if response.status_code == 401:
+            return RetVal(action_result.set_status(phantom.APP_ERROR, consts.ERROR_AUTHORIZATION_FAILED), None)
+
+        if response.status_code == 403:
+            return RetVal(action_result.set_status(phantom.APP_ERROR, consts.ERROR_ACCESS_FORBIDDEN), None)
+
         # Process an HTML response, Do this no matter what the api talks.
         # There is a high chance of a PROXY in between phantom and the rest of
         # world, in case of errors, PROXY's return HTML, this function parses
@@ -238,6 +253,73 @@ class InfobloxUtils:
 
         return RetVal(action_result.set_status(phantom.APP_ERROR, message), None)
 
+    def get_customer_id(self, action_result, api_key):
+        """
+        Retrieve the Infoblox customer ID used for the x-Infoblox-customer header, caching it in the
+        connector's persisted state so it is only fetched once per asset.
+
+        The state file is not a secure secret store, so the API key is never cached in plaintext.
+        Instead, the encrypted API key (via Phantom's platform-provided encryption_helper, salted with
+        the asset ID) is cached alongside the customer ID. On each call, the cached value is decrypted
+        and compared against the live config API key, so rotating the asset's API key (e.g. pointing it
+        at a different Infoblox customer account) transparently invalidates the stale cached value.
+
+        Args:
+            action_result (ActionResult): Unused for status reporting (kept for signature symmetry);
+                a throwaway ActionResult is used internally so a lookup failure never affects the
+                caller's action result.
+            api_key (str): The API key currently configured on the asset.
+
+        Returns:
+            str or None: The customer ID if it could be determined, otherwise None.
+        """
+        state = self._connector._state
+        if state is None:
+            state = {}
+            self._connector._state = state
+
+        asset_id = self._connector.get_asset_id()
+        cached_customer_id = state.get(consts.STATE_KEY_CUSTOMER_ID)
+        cached_encrypted_api_key = state.get(consts.STATE_KEY_CUSTOMER_ID_API_KEY_ENC)
+        if cached_customer_id and cached_encrypted_api_key:
+            try:
+                cached_api_key = encryption_helper.decrypt(cached_encrypted_api_key, asset_id)
+            except Exception as e:
+                self._connector.debug_print(f"Unable to decrypt cached API key for customer ID cache check. Error: {e}")
+                cached_api_key = None
+            if cached_api_key and cached_api_key == api_key:
+                return cached_customer_id
+
+        # The header is best-effort telemetry: this lookup must never surface an exception into the
+        # caller's action, so both transport failures and unexpected payload shapes degrade to None.
+        lookup_result = ActionResult(dict())
+        try:
+            ret_val, response = self.make_rest_call(
+                consts.ACCOUNT_ENDPOINT,
+                lookup_result,
+                method="get",
+                include_customer_header=False,
+            )
+        except Exception as e:
+            self._connector.debug_print(f"Infoblox customer ID lookup raised an error. Error: {e}")
+            return None
+
+        if phantom.is_fail(ret_val) or not isinstance(response, dict):
+            self._connector.debug_print("Unable to retrieve Infoblox customer ID for request headers.")
+            return None
+
+        results = response.get("results")
+        customer_id = results.get("customer_id") if isinstance(results, dict) else None
+        if customer_id:
+            state[consts.STATE_KEY_CUSTOMER_ID] = customer_id
+            try:
+                state[consts.STATE_KEY_CUSTOMER_ID_API_KEY_ENC] = encryption_helper.encrypt(api_key, asset_id)
+            except Exception as e:
+                self._connector.debug_print(f"Unable to encrypt API key for customer ID cache. Error: {e}")
+                state.pop(consts.STATE_KEY_CUSTOMER_ID_API_KEY_ENC, None)
+
+        return customer_id
+
     def make_rest_call(
         self,
         endpoint,
@@ -247,6 +329,7 @@ class InfobloxUtils:
         params=None,
         data=None,
         timeout=None,
+        include_customer_header=True,
     ):
         """
         Make a REST call to the Infoblox API.
@@ -259,6 +342,8 @@ class InfobloxUtils:
             params (dict): Query parameters to send with the request.
             data (dict): Data to send in the request body.
             timeout (int): Request timeout in seconds.
+            include_customer_header (bool): Whether to resolve and send the x-Infoblox-customer header.
+                Set to False for the account lookup call itself, to avoid recursing.
 
         Returns:
             tuple: A tuple containing the status of the request and the response data.
@@ -283,7 +368,14 @@ class InfobloxUtils:
         request_headers = {
             "Authorization": f"Token {api_key}",
             "Accept": "application/json",
+            consts.INFOBLOX_CLIENT_HEADER_NAME: consts.INFOBLOX_CLIENT_HEADER_VALUE,
         }
+
+        if include_customer_header:
+            customer_id = self.get_customer_id(action_result, api_key)
+            if customer_id:
+                request_headers[consts.INFOBLOX_CUSTOMER_HEADER_NAME] = customer_id
+
         if headers:
             request_headers.update(headers)
 
@@ -541,7 +633,7 @@ class Validator:
         """
         return phantom.is_hash(hash_value)
 
-    def validate_integer(self, action_result, parameter, key, allow_zero=False, allow_negative=False):
+    def validate_integer(self, action_result, parameter, key, allow_zero=False, allow_negative=False, max_value=None):
         """
         Validate if a given parameter is an integer.
 
@@ -551,6 +643,7 @@ class Validator:
             key (str): The key of the parameter to validate.
             allow_zero (bool): Whether to allow zero as a valid integer (default is False).
             allow_negative (bool): Whether to allow negative integers as valid (default is False).
+            max_value (int): Inclusive upper bound to enforce, or None for no upper bound.
 
         Returns:
             Tuple[int, int]: A tuple containing the status of the action and the validated integer.
@@ -588,7 +681,39 @@ class Validator:
                     None,
                 )
 
+            if max_value is not None and parameter > max_value:
+                return (
+                    action_result.set_status(phantom.APP_ERROR, consts.ERROR_MAX_INT_PARAM.format(key=key, max_value=max_value)),
+                    None,
+                )
+
         return phantom.APP_SUCCESS, parameter
+
+    def validate_boolean(self, action_result, parameter, key):
+        """
+        Validate if a given parameter is a boolean.
+
+        Args:
+            action_result (ActionResult): The ActionResult object to append error messages to.
+            parameter: The parameter to validate.
+            key (str): The key of the parameter to validate.
+
+        Returns:
+            Tuple[int, bool|None]: A tuple containing the status of the action and the validated boolean.
+        """
+        if parameter is None:
+            return phantom.APP_SUCCESS, None
+
+        if isinstance(parameter, bool):
+            return phantom.APP_SUCCESS, parameter
+
+        if isinstance(parameter, str) and parameter.strip().lower() in ("true", "false"):
+            return phantom.APP_SUCCESS, parameter.strip().lower() == "true"
+
+        return (
+            action_result.set_status(phantom.APP_ERROR, consts.ERROR_INVALID_BOOL_PARAM.format(key=key)),
+            None,
+        )
 
     def validate_list(self, action_result, parameter, key):
         """
@@ -746,6 +871,35 @@ class Validator:
         # Regular expression for YYYY-MM-DDTHH:mm:ss.SSS format
         pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$"
         return bool(re.match(pattern, datetime_str))
+
+    def validate_rfc3339_datetime(self, datetime_str="2025-12-19T03:00:00Z"):
+        """Validate a datetime string against the RFC 3339 date-time format used by Infoblox v2 APIs.
+
+        Accepts formats such as:
+            - 2025-12-19T03:00:00Z
+            - 2025-12-19T03:00:00.123Z
+            - 2025-12-19T03:00:00+05:30
+            - 2025-12-19T03:00:00.123456-08:00
+
+        Args:
+            datetime_str (str): The datetime string to validate (default: "2025-12-19T03:00:00Z")
+
+        Returns:
+            bool: True if the string is a valid RFC 3339 date-time, False otherwise
+        """
+        if not isinstance(datetime_str, str):
+            return False
+
+        pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$"
+        if not re.match(pattern, datetime_str):
+            return False
+
+        normalized = f"{datetime_str[:-1]}+00:00" if datetime_str.endswith("Z") else datetime_str
+        try:
+            datetime.fromisoformat(normalized)
+            return True
+        except ValueError:
+            return False
 
     def validate_dict(self, action_result, parameter, key):
         """

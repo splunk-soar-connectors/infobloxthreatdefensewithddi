@@ -20,11 +20,24 @@ from pathlib import Path
 
 if importlib.util.find_spec("phantom") is None:
     phantom_package = types.ModuleType("phantom")
+    phantom_package.__path__ = []
     phantom_app = types.ModuleType("phantom.app")
     phantom_app.APP_SUCCESS = 0
     phantom_app.APP_ERROR = 1
+    phantom_action_result = types.ModuleType("phantom.action_result")
+    phantom_action_result.ActionResult = object
     phantom_package.app = phantom_app
+    phantom_package.action_result = phantom_action_result
     sys.modules["phantom"] = phantom_package
     sys.modules["phantom.app"] = phantom_app
+    sys.modules["phantom.action_result"] = phantom_action_result
+
+# encryption_helper is provided by the SOAR platform at runtime and is not installable,
+# so stub it for offline test collection.
+if importlib.util.find_spec("encryption_helper") is None:
+    encryption_helper_module = types.ModuleType("encryption_helper")
+    encryption_helper_module.encrypt = lambda value, key: value
+    encryption_helper_module.decrypt = lambda value, key: value
+    sys.modules["encryption_helper"] = encryption_helper_module
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

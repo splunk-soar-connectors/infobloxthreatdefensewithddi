@@ -14,6 +14,37 @@
 # and limitations under the License.
 
 
+def _is_recommendation_action_taken(recommendation):
+    """Coerce a recommendation's action_taken value to a bool.
+
+    The API returns this field as a string ("true"/"false"), not a JSON boolean.
+    """
+    value = recommendation.get("action_taken")
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes")
+    return bool(value)
+
+
+def _coerce_to_list(value):
+    """Return value as a list of non-empty items.
+
+    The insight details API returns ``threat_properties`` and ``overview`` as
+    lists, but this guards against a scalar/string being returned so the
+    template can always iterate.
+
+    Args:
+        value: The raw field value (list, string, or None)
+
+    Returns:
+        list: A list of non-empty items
+    """
+    if isinstance(value, list):
+        return [item for item in value if item not in (None, "")]
+    if value in (None, ""):
+        return []
+    return [value]
+
+
 def display_indicator_threat_data(provides, all_app_runs, context):
     """
     Display Indicator Threat Data
@@ -119,3 +150,42 @@ def display_initiate_indicator_intel_lookup(provides, all_app_runs, context):
                 context["total_results"] = len(results)
 
     return "views/infoblox_initiate_indicator_intel_lookup.html"
+
+
+def display_get_iq_for_td_insight_details(provides, all_app_runs, context):
+    """
+    Display Get IQ for TD Insight Details Data
+
+    This function renders a custom detail view for the get_iq_for_td_insight_details action,
+    breaking the single insight object out into an overview panel plus dedicated
+    sections for top indicators, top assets, threat actors, and key recommendations.
+
+    Args:
+        provides (str): The name of the action that provides the data
+        all_app_runs (list): List of all app runs
+        context (dict): Context to render the template with
+
+    Returns:
+        str: The path to the HTML template to render
+    """
+    context["has_data"] = False
+    context["insight"] = {}
+
+    for _, action_results in all_app_runs:
+        for result in action_results:
+            data = result.get_data()
+            if not data:
+                continue
+
+            context["has_data"] = True
+            insight = dict(data[0])
+            key_recommendations = insight.get("key_recommendations")
+            if isinstance(key_recommendations, list):
+                insight["key_recommendations"] = [rec for rec in key_recommendations if not _is_recommendation_action_taken(rec)]
+            # Normalize list-valued fields so the template can render them as
+            # tags/bullets instead of a raw Python list repr.
+            insight["threat_properties"] = _coerce_to_list(insight.get("threat_properties"))
+            insight["overview"] = _coerce_to_list(insight.get("overview"))
+            context["insight"] = insight
+
+    return "views/infoblox_get_iq_for_td_insight_details.html"

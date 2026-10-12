@@ -1,0 +1,364 @@
+<!--
+ Copyright 2026 Infoblox Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+{% extends 'widgets/widget_template.html' %}
+{% load custom_template %}
+{% block custom_title_prop %}
+  {% if title_logo %}
+    style="background-size: auto 60%; background-position: 50%;
+    background-repeat: no-repeat; background-image: url('/app_resource/{{ title_logo }}');"
+  {% endif %}
+{% endblock %}
+{% block title1 %}{{ title1 }}{% endblock %}
+{% block title2 %}{{ title2 }}{% endblock %}
+{% block custom_tools %}{% endblock %}
+{% block widget_content %}
+  <!-- Minimal CSS for basic detail view formatting -->
+  <style>
+    .widget-content .insight-details-view {
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .insight-details-view .no-data {
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+
+    .insight-details-view h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    .insight-details-view h3:first-child {
+      margin-top: 0;
+    }
+
+    .insight-details-view .wf-table-horizontal {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .insight-details-view .wf-table-horizontal th,
+    .insight-details-view .wf-table-horizontal td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .insight-details-view .severity-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .insight-details-view .severity-critical {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+
+    .insight-details-view .severity-high {
+      background-color: #fcf0e2;
+      color: #c77c11;
+    }
+
+    .insight-details-view .severity-medium {
+      background-color: #fcf8e3;
+      color: #8a6d3b;
+    }
+
+    .insight-details-view .severity-low {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+
+    .insight-details-view .counts-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .insight-details-view .count-tile {
+      flex: 1 1 120px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .insight-details-view .count-tile .count-value {
+      display: block;
+      font-size: 1.4em;
+      font-weight: bold;
+    }
+
+    .insight-details-view .count-tile .count-label {
+      display: block;
+      font-size: 0.85em;
+    }
+
+    .insight-details-view .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .insight-details-view .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border: 1px solid #b8c4d0;
+      border-radius: 12px;
+      background-color: #eef2f7;
+      color: #33475b;
+      font-size: 0.85em;
+      white-space: nowrap;
+    }
+
+    .insight-details-view .overview-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .insight-details-view .overview-list li {
+      margin-bottom: 6px;
+    }
+  </style>
+  <div class="insight-details-view">
+    {% if has_data %}
+      <!-- Overview panel -->
+      <h3>{{ insight.name|default:"Insight" }}</h3>
+      <table class="wf-table-horizontal">
+        <tr>
+          <td>
+            <strong>Insight ID:</strong>
+          </td>
+          <td>
+            <a href="javascript:;"
+               onclick="context_menu(this, [{'contains': ['infoblox insight id'], 'value': '{{ insight.insight_id }}'}], 0, {{ container.id }}, null, false);">
+              {{ insight.insight_id }}
+              &nbsp;
+              <span class="fa fa-caret-down" style="font-size: smaller;"></span>
+            </a>
+          </td>
+          <td>
+            <strong>Status:</strong>
+          </td>
+          <td>{{ insight.status|default:"-" }}</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Severity:</strong>
+          </td>
+          <td>
+            <span class="severity-badge severity-{{ insight.severity|lower }}">{{ insight.severity|default:"-" }}</span>
+          </td>
+          <td>
+            <strong>Threat Properties:</strong>
+          </td>
+          <td>
+            {% if insight.threat_properties %}
+              <div class="tag-list">
+                {% for prop in insight.threat_properties %}<span class="tag">{{ prop }}</span>{% endfor %}
+              </div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Evaluation Start:</strong>
+          </td>
+          <td>{{ insight.evaluation_start_date|default:"-" }}</td>
+          <td>
+            <strong>Evaluation End:</strong>
+          </td>
+          <td>{{ insight.evaluation_end_date|default:"-" }}</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Date Created:</strong>
+          </td>
+          <td>{{ insight.date_created|default:"-" }}</td>
+          <td>
+            <strong>Expiring In (days):</strong>
+          </td>
+          <td>{{ insight.expiring_in_days|default:"-" }}</td>
+        </tr>
+        {% if insight.description %}
+          <tr>
+            <td>
+              <strong>Description:</strong>
+            </td>
+            <td colspan="3">{{ insight.description }}</td>
+          </tr>
+        {% endif %}
+        {% if insight.overview %}
+          <tr>
+            <td>
+              <strong>Overview:</strong>
+            </td>
+            <td colspan="3">
+              <ul class="overview-list">
+                {% for point in insight.overview %}<li>{{ point }}</li>{% endfor %}
+              </ul>
+            </td>
+          </tr>
+        {% endif %}
+      </table>
+      <!-- Counts panel -->
+      <div class="counts-panel">
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_events|default:"0" }}</span>
+          <span class="count-label">Events</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_indicators|default:"0" }}</span>
+          <span class="count-label">Indicators</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_assets|default:"0" }}</span>
+          <span class="count-label">Assets</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_verified_assets|default:"0" }}</span>
+          <span class="count-label">Verified Assets</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_unverified_assets|default:"0" }}</span>
+          <span class="count-label">Unverified Assets</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.total_users|default:"0" }}</span>
+          <span class="count-label">Users</span>
+        </div>
+        <div class="count-tile">
+          <span class="count-value">{{ insight.time_saved_seconds|default:"0" }}</span>
+          <span class="count-label">Time Saved (s)</span>
+        </div>
+      </div>
+      <!-- Top indicators -->
+      {% if insight.top_indicators %}
+        <h3>Top Indicators</h3>
+        <table class="wf-table-horizontal datatable">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Description</th>
+              <th>Threat Actors</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in insight.top_indicators %}
+              <tr>
+                <td>{{ item.indicator }}</td>
+                <td>{{ item.description|default:"-" }}</td>
+                <td>
+                  {% for actor in item.threat_actors %}
+                    {{ actor.name }}
+                    {% if not forloop.last %},{% endif %}
+                  {% empty %}
+                    -
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <!-- Top assets -->
+      {% if insight.top_assets %}
+        <h3>Top Assets</h3>
+        <table class="wf-table-horizontal datatable">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in insight.top_assets %}
+              <tr>
+                <td>{{ item.asset }}</td>
+                <td>{{ item.description|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <!-- Threat actors -->
+      {% if insight.threat_actors %}
+        <h3>Threat Actors</h3>
+        <table class="wf-table-horizontal datatable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for actor in insight.threat_actors %}
+              <tr>
+                <td>{{ actor.actor_name }}</td>
+                <td>{{ actor.actor_description|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <!-- Key recommendations -->
+      {% if insight.key_recommendations %}
+        <h3>Key Recommendations</h3>
+        <table class="wf-table-horizontal datatable">
+          <thead>
+            <tr>
+              <th>Recommendation ID</th>
+              <th>Recommendation</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rec in insight.key_recommendations %}
+              <tr>
+                <td>
+                  {% if rec.id %}
+                    <a href="javascript:;"
+                       onclick="context_menu(this, [{'contains': ['infoblox recommendation id'], 'value': '{{ rec.id }}'}], 0, {{ container.id }}, null, false);">
+                      {{ rec.id }}
+                      &nbsp;
+                      <span class="fa fa-caret-down" style="font-size: smaller;"></span>
+                    </a>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ rec.recommendation }}</td>
+                <td>{{ rec.type|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    {% else %}
+      <div class="no-data">
+        <h3>No Data Found</h3>
+        <p>No details were found for the specified insight ID.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
